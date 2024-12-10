@@ -34,7 +34,7 @@ def search_indices(uri_file: str, output_dir: str):
         for index in indices:
             for line in lines:
                 script.write(f"""python3 cdx-index-client.py -c {index} "{line}" -d {output_dir} -j{os.linesep}""")
-                script.write(f"""sleep 1{os.linesep}""")
+                script.write(f"""sleep 10{os.linesep}""")
 
 if __name__ == "__main__":
     if len(sys.argv) <= 1:
