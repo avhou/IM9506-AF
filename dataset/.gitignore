@@ -1,6 +1,7 @@
 **/venv
 **/.idea
-**/*warc.gz
+**/*warc*.gz
+**/*warcdb*
 **/*CC-MAIN*
 .ipynb_checkpoints
 all-collections.json
