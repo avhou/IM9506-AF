@@ -5,3 +5,5 @@
 **/*CC-MAIN*
 .ipynb_checkpoints
 all-collections.json
+**/*sqlite
+**/*zst

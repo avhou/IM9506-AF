@@ -1,0 +1,3 @@
+alias t=Test/compile
+alias tt=test
+alias c=compile
