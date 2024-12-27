@@ -10,6 +10,7 @@ import org.jsoup.Jsoup
 import org.netpreserve.jwarc.{ MediaType, WarcReader, WarcResponse }
 
 import java.nio.charset.{ Charset, StandardCharsets }
+import java.security.MessageDigest
 import java.util.Optional
 
 object Filter extends IOApp {
@@ -25,7 +26,9 @@ object Filter extends IOApp {
       timestamp: String,
       content: String,
       originalContent: String,
-      linkPercentage: Double
+      linkPercentage: Double,
+      contentHash: String,
+      languages: Option[String]
   ) extends Message
   final case object Done extends Message
   final case class ItemToProcess(
@@ -36,7 +39,8 @@ object Filter extends IOApp {
       mime: String,
       charset: Option[String],
       timestamp: String,
-      bytes: Array[Byte]
+      bytes: Array[Byte],
+      languages: Option[String]
   )
   final case class Resources(sourceTransactor: HikariTransactor[IO], targetTransactor: HikariTransactor[IO], channel: Channel[IO, Message])
 
@@ -79,10 +83,16 @@ object Filter extends IOApp {
             val subscriber: fs2.Stream[IO, Unit] =
               resources.channel.stream.evalMap {
                 case msg: ChannelMessage =>
-                  sql"insert into hits(url, urlp1, urlp2, urlp3, mime, timestamp, content, orig_content, link_percentage) values (${msg.url}, ${msg.urlp1}, ${msg.urlp2}, ${msg.urlp3}, ${msg.mime}, ${msg.timestamp}, ${msg.content}, ${msg.originalContent}, ${msg.linkPercentage})".update.run
-                    .transact(resources.targetTransactor)
-                    .void
-                    .handleErrorWith(t => IO.println(s"problem persisting message # ${msg.nr} ${msg.url} ${t.getMessage}"))
+                  for {
+                    _ <- sql"select 1 from hits where content_hash = ${msg.contentHash}".query[Int].option.transact(resources.targetTransactor).flatMap {
+                           case Some(_) => IO.println(s"skipping message # ${msg.nr} content hash ${msg.contentHash} already found")
+                           case None =>
+                             sql"insert into hits(url, urlp1, urlp2, urlp3, mime, timestamp, content, orig_content, link_percentage, content_hash, languages) values (${msg.url}, ${msg.urlp1}, ${msg.urlp2}, ${msg.urlp3}, ${msg.mime}, ${msg.timestamp}, ${msg.content}, ${msg.originalContent}, ${msg.linkPercentage}, ${msg.contentHash}, ${msg.languages})".update.run
+                               .transact(resources.targetTransactor)
+                               .void
+                               .handleErrorWith(t => IO.println(s"problem persisting message # ${msg.nr} ${msg.url} ${t.getMessage}"))
+                         }
+                  } yield ()
                 case Done => IO.println("received done message, can release subscriber") >> subscriberDone.complete(()).void
               }
             val finalize =
@@ -114,15 +124,18 @@ object Filter extends IOApp {
                               doc.select("script").remove()
                               val originalContent = doc.toString
                               // remove certain elements that contain links and navigations
-                              doc.select("nav, header, footer, form, img, svg, aside").remove()
-                              doc.select("[role=navigation], [role=banner], [role=menu], [role=form], [role=search], [role=button]").remove()
-                              doc.select("[class~=(?i)(footer|navbar|articles-list|list-group)]").remove()
-                              // delete hrefs in order to avoid hits in href attributes
+                              doc
+                                .select(
+                                  "nav, header, footer, form, img, svg, aside, [role=navigation], [role=banner], [role=menu], [role=form], [role=search], [role=button], [class~=(?i)(footer|navbar|articles-list|list-group)]"
+                                )
+                                .remove()
+                              // delete hrefs and other attributes in order to avoid hits in href attributes
                               doc.select("a").forEach { link =>
                                 link.clearAttributes()
                                 ()
                               }
-                              val content: String = doc.body.text
+                              val content: String     = doc.body.text
+                              val contentHash: String = bytesToHex(MessageDigest.getInstance("SHA-256").digest(content.getBytes(StandardCharsets.UTF_8)))
                               doc.select("a").remove()
                               val contentWithoutLinks: String = doc.body.text
                               val linkPercentageText: Double  = 1.0 - contentWithoutLinks.length.toDouble / content.length.toDouble
@@ -138,7 +151,8 @@ object Filter extends IOApp {
 //                                                 item.timestamp,
 //                                                 content,
 //                                                 originalContent,
-//                                                 linkPercentageText
+//                                                 linkPercentageText,
+//                                                 contentHash
 //                                  )
 //                                )
 //                              } else {
@@ -155,7 +169,9 @@ object Filter extends IOApp {
                                                  item.timestamp,
                                                  content,
                                                  originalContent,
-                                                 linkPercentageText
+                                                 linkPercentageText,
+                                                 contentHash,
+                                                 item.languages
                                   )
                                 }
                             case _ => None
@@ -187,13 +203,16 @@ object Filter extends IOApp {
   }
 
   val getItemsToProcess: fs2.Stream[ConnectionIO, ItemToProcess] =
-    sql"select url, urlp1, urlp2, urlp3, mime, charset, timestamp, downloaded_content from download_progress where downloaded = 1".query[ItemToProcess].stream
+    sql"select url, urlp1, urlp2, urlp3, mime, charset, timestamp, downloaded_content, languages from download_progress where downloaded = 1"
+      .query[ItemToProcess]
+      .stream
 
   val dropTargetTable: ConnectionIO[Int] =
     sql"drop table if exists hits".update.run
 
   val createTargetTable: ConnectionIO[Int] =
-    sql"create table if not exists hits(url text, urlp1 text, urlp2 text, urlp3 text, mime text, timestamp text, content text, orig_content text, link_percentage double)".update.run
+    sql"create table if not exists hits(url text, urlp1 text, urlp2 text, urlp3 text, mime text, timestamp text, content text, orig_content text, link_percentage double, content_hash text, languages text)".update.run >>
+      sql"create index if not exists ix_content_hash on hits(content_hash)".update.run
 
   val vacuum: ConnectionIO[Int] =
     sql"vacuum".update.run
@@ -216,4 +235,16 @@ object Filter extends IOApp {
               ce // await connection here
             )
     } yield xa
+
+  def bytesToHex(hash: Array[Byte]): String = {
+    val hexString: StringBuffer = new StringBuffer
+    for (i <- hash.indices) {
+      val hex: String = Integer.toHexString(0xff & hash(i))
+      if (hex.length == 1) {
+        hexString.append('0')
+      }
+      hexString.append(hex)
+    }
+    hexString.toString
+  }
 }
