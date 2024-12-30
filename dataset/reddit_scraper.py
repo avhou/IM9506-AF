@@ -1,3 +1,4 @@
+import os.path
 from datetime import datetime, timedelta
 from BAScraper.BAScraper_async import PullPushAsync
 import asyncio
@@ -38,7 +39,7 @@ keywords = [
  "emigrant",
  "expat",
  "expatriate",
- "expatrié"
+ "expatrié",
  "fleeing population",
  "herplaatste bevolking",
  "immigrant",
@@ -82,5 +83,8 @@ def fetch(reddit: str, keyword: str):
 if __name__ == "__main__":
     for reddit in reddits:
         for keyword in keywords:
-            print(f"Fetching reddit {reddit}, keyword {keyword}")
-            fetch(reddit, keyword)
+            if not os.path.exists(f"reddit-{reddit}-{keyword}.json"):
+                print(f"Fetching reddit {reddit}, keyword {keyword}")
+                fetch(reddit, keyword)
+            else:
+                print(f"reddit {reddit} keyword {keyword} already fetched")
