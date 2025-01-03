@@ -5,7 +5,7 @@ import sbt.*
 
 object BuildSettings {
 
-  lazy val scala213               = "2.13.14"
+  lazy val scala213               = "2.13.15"
   lazy val supportedScalaVersions = List(scala213)
 
   val compilerOptions: Seq[String] = {
@@ -63,7 +63,6 @@ object BuildSettings {
       crossScalaVersions := supportedScalaVersions,
       addCompilerPlugin("com.olegpy"    %% "better-monadic-for" % "0.3.1"),
       addCompilerPlugin("org.typelevel" %% "kind-projector"     % "0.13.3" cross CrossVersion.full),
-      addCompilerPlugin("org.scalameta"  % "semanticdb-scalac"  % "4.9.5" cross CrossVersion.full),
       ThisBuild / scalacOptions ++= compilerOptions,
       ThisBuild / Compile / run / fork := true,
       testOptions += Tests.Argument("-oF")
