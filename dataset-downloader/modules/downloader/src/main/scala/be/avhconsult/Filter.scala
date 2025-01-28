@@ -9,6 +9,7 @@ import fs2.concurrent.Channel
 import org.jsoup.Jsoup
 import org.netpreserve.jwarc.{ MediaType, WarcReader, WarcResponse }
 
+import java.net.{ URI, URL }
 import java.nio.charset.{ Charset, StandardCharsets }
 import java.security.MessageDigest
 import java.util.Optional
@@ -22,13 +23,20 @@ object Filter extends IOApp {
       urlp1: String,
       urlp2: String,
       urlp3: String,
+      host: String,
       mime: String,
       timestamp: String,
       content: String,
       originalContent: String,
       linkPercentage: Double,
       contentHash: String,
-      languages: Option[String]
+      languages: Option[String],
+      totalNrHits: Int,
+      distinctNrHits: Int,
+      matches: String,
+      matchesWords: String,
+      politicalParty: Boolean,
+      newsOutlet: Boolean
   ) extends Message
   final case object Done extends Message
   final case class ItemToProcess(
@@ -42,7 +50,13 @@ object Filter extends IOApp {
       bytes: Array[Byte],
       languages: Option[String]
   )
-  final case class Resources(sourceTransactor: HikariTransactor[IO], targetTransactor: HikariTransactor[IO], channel: Channel[IO, Message])
+  final case class Resources(
+      sourceTransactor: HikariTransactor[IO],
+      targetTransactor: HikariTransactor[IO],
+      uriMappingTransactor: HikariTransactor[IO],
+      channel: Channel[IO, Message]
+  )
+  final case class Mapping(politicalParty: Boolean, newsOutlet: Boolean)
 
   // should we search on word boundaries?  ie """\b(migrant|...)\b""".r
   // or only start on word boundaries?  ie """\b(migrant|...)""".r
@@ -65,10 +79,17 @@ object Filter extends IOApp {
     resources(source, target)
       .use { resources =>
         for {
-          _              <- IO.println("dropping and creating target table")
-          _              <- (dropTargetTable >> createTargetTable).transact(resources.targetTransactor)
-          _              <- IO.println("vacuum")
-          _              <- resources.targetTransactor.rawTrans.apply(vacuum)
+          _ <- IO.println("dropping and creating target table")
+          _ <- (dropTargetTable >> createTargetTable).transact(resources.targetTransactor)
+          _ <- IO.println("vacuum")
+          _ <- resources.targetTransactor.rawTrans.apply(vacuum)
+          _ <- IO.println("fetching uri mapping")
+          uriMapping <-
+            readMappings
+              .transact(resources.uriMappingTransactor)
+              .compile
+              .toList
+              .map(_.groupMapReduce { case (uri, _, _) => uri } { case (_, politicalParty, newsOutlet) => Mapping(politicalParty, newsOutlet) }((f, _) => f))
           subscriberDone <- Deferred[IO, Unit]
           _ <- {
             val publisher: fs2.Stream[IO, Unit] =
@@ -76,7 +97,7 @@ object Filter extends IOApp {
                 .apply(getItemsToProcess)
                 .zipWithIndex
                 .parEvalMap(20) { case (itemToProcess, number) =>
-                  processItemToProcess(number, itemToProcess)
+                  processItemToProcess(number, itemToProcess, uriMapping)
                     .flatMap(_.traverse(resources.channel.send).void)
                     .handleErrorWith(t => IO.println(s"error processing # ${number} ${itemToProcess.url} with mime ${itemToProcess.mime} ${t.getMessage}"))
                 } ++ fs2.Stream.eval(IO.println("done sending all messages")) ++ fs2.Stream.eval(resources.channel.send(Done).void)
@@ -87,7 +108,7 @@ object Filter extends IOApp {
                     _ <- sql"select 1 from hits where content_hash = ${msg.contentHash}".query[Int].option.transact(resources.targetTransactor).flatMap {
                            case Some(_) => IO.println(s"skipping message # ${msg.nr} content hash ${msg.contentHash} already found")
                            case None =>
-                             sql"insert into hits(url, urlp1, urlp2, urlp3, mime, timestamp, content, orig_content, link_percentage, content_hash, languages) values (${msg.url}, ${msg.urlp1}, ${msg.urlp2}, ${msg.urlp3}, ${msg.mime}, ${msg.timestamp}, ${msg.content}, ${msg.originalContent}, ${msg.linkPercentage}, ${msg.contentHash}, ${msg.languages})".update.run
+                             sql"insert into hits(url, urlp1, urlp2, urlp3, host, mime, timestamp, content, orig_content, link_percentage, content_hash, languages, total_nr_hits, distinct_nr_hits, matches, matches_words, political_party, news_outlet) values (${msg.url}, ${msg.urlp1}, ${msg.urlp2}, ${msg.urlp3}, ${msg.host}, ${msg.mime}, ${msg.timestamp}, ${msg.content}, ${msg.originalContent}, ${msg.linkPercentage}, ${msg.contentHash}, ${msg.languages}, ${msg.totalNrHits}, ${msg.distinctNrHits}, ${msg.matches}, ${msg.matchesWords}, ${msg.politicalParty}, ${msg.newsOutlet})".update.run
                                .transact(resources.targetTransactor)
                                .void
                                .handleErrorWith(t => IO.println(s"problem persisting message # ${msg.nr} ${msg.url} ${t.getMessage}"))
@@ -107,7 +128,7 @@ object Filter extends IOApp {
         } yield None
       }
 
-  def processItemToProcess(number: Long, item: ItemToProcess): IO[Option[ChannelMessage]] =
+  def processItemToProcess(number: Long, item: ItemToProcess, uriMappings: Map[String, Mapping]): IO[Option[ChannelMessage]] =
     for {
       _ <- IO.println(s"processed # ${number} messages").whenA(number % 1000 == 0)
       result <- item.mime match {
@@ -139,41 +160,51 @@ object Filter extends IOApp {
                               doc.select("a").remove()
                               val contentWithoutLinks: String = doc.body.text
                               val linkPercentageText: Double  = 1.0 - contentWithoutLinks.length.toDouble / content.length.toDouble
-//                              // meer dan 1 match is vereist
-//                              if (pattern.findAllMatchIn(content).toList.size > 1 && pattern.findAllMatchIn(contentWithoutLinks).toList.size > 1) {
-//                                Some(
-//                                  ChannelMessage(number,
-//                                                 item.url,
-//                                                 item.urlp1,
-//                                                 item.urlp2,
-//                                                 item.urlp3,
-//                                                 item.mime,
-//                                                 item.timestamp,
-//                                                 content,
-//                                                 originalContent,
-//                                                 linkPercentageText,
-//                                                 contentHash
-//                                  )
-//                                )
-//                              } else {
-//                                None
-//                              }
-                              (pattern.findFirstMatchIn(content), pattern.findFirstMatchIn(contentWithoutLinks))
-                                .mapN { case _ =>
-                                  ChannelMessage(number,
-                                                 item.url,
-                                                 item.urlp1,
-                                                 item.urlp2,
-                                                 item.urlp3,
-                                                 item.mime,
-                                                 item.timestamp,
-                                                 content,
-                                                 originalContent,
-                                                 linkPercentageText,
-                                                 contentHash,
-                                                 item.languages
+
+                              val matchesContent             = pattern.findAllMatchIn(content).toList
+                              val matchesContentWithoutlinks = pattern.findAllMatchIn(contentWithoutLinks).toList
+
+                              if (matchesContent.nonEmpty && matchesContentWithoutlinks.nonEmpty) {
+
+                                val matchSet           = matchesContent.map(_.group(1)).toSet
+                                val matchesString      = matchesContent.map(m => s"${m.start}-${m.end}").mkString(",")
+                                val matchesWordsString = matchesContent.map(_.matched).mkString(",")
+
+                                // check for url matches
+                                val host: String = URI.create(item.url).getHost.toLowerCase
+                                val (key, mapping) = uriMappings
+                                  .find { case (key, _) =>
+                                    key == host || host.endsWith(key)
+                                  }
+                                  .getOrElse(("ongekend", Mapping(false, false)))
+
+                                Some(
+                                  ChannelMessage(
+                                    nr = number,
+                                    url = item.url,
+                                    urlp1 = item.urlp1,
+                                    urlp2 = item.urlp2,
+                                    urlp3 = item.urlp3,
+                                    host = key,
+                                    mime = item.mime,
+                                    timestamp = item.timestamp,
+                                    content = content,
+                                    originalContent = originalContent,
+                                    linkPercentage = linkPercentageText,
+                                    contentHash = contentHash,
+                                    languages = item.languages,
+                                    totalNrHits = matchesContent.size,
+                                    distinctNrHits = matchSet.size,
+                                    matches = matchesString,
+                                    matchesWords = matchesWordsString,
+                                    politicalParty = mapping.politicalParty,
+                                    newsOutlet = mapping.newsOutlet
                                   )
-                                }
+                                )
+                              } else {
+                                None
+                              }
+
                             case _ => None
                           }
                         }
@@ -211,18 +242,22 @@ object Filter extends IOApp {
     sql"drop table if exists hits".update.run
 
   val createTargetTable: ConnectionIO[Int] =
-    sql"create table if not exists hits(url text, urlp1 text, urlp2 text, urlp3 text, mime text, timestamp text, content text, orig_content text, link_percentage double, content_hash text, languages text)".update.run >>
+    sql"create table if not exists hits(url text, urlp1 text, urlp2 text, urlp3 text, host text, mime text, timestamp text, content text, orig_content text, link_percentage double, content_hash text, languages text, total_nr_hits, distinct_nr_hits, matches text, matches_words text, political_party boolean, news_outlet boolean)".update.run >>
       sql"create index if not exists ix_content_hash on hits(content_hash)".update.run
+
+  val readMappings: fs2.Stream[ConnectionIO, (String, Boolean, Boolean)] =
+    sql"select uri, political_party, news_outlet from uri_mapping".query[(String, Boolean, Boolean)].stream
 
   val vacuum: ConnectionIO[Int] =
     sql"vacuum".update.run
 
   def resources(source: String, target: String): Resource[IO, Resources] =
     for {
-      sourceTransactor <- transactor(source)
-      targetTransactor <- transactor(target)
-      channel          <- Resource.eval(Channel.bounded[IO, Message](50))
-    } yield Resources(sourceTransactor, targetTransactor, channel)
+      sourceTransactor     <- transactor(source)
+      targetTransactor     <- transactor(target)
+      uriMappingTransactor <- transactor("uri-mapping.sqlite")
+      channel              <- Resource.eval(Channel.bounded[IO, Message](50))
+    } yield Resources(sourceTransactor, targetTransactor, uriMappingTransactor, channel)
 
   def transactor(name: String): Resource[IO, HikariTransactor[IO]] =
     for {
