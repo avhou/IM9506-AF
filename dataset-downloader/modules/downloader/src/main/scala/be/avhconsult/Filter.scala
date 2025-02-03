@@ -77,7 +77,9 @@ object Filter extends IOApp {
     val target = args.drop(1).headOption.getOrElse(throw new RuntimeException("geef een target database naam op"))
 
     fs2.Stream
-      .unfoldLoopEval(())(_ => Clock[IO].timed(process(source, target)).flatMap { case (duration, v) => IO.println(s"execution took $duration").as(((), v)) })
+      .unfoldLoopEval(())(_ =>
+        Clock[IO].timed(process(source, target)).flatMap { case (duration, v) => IO.println(s"execution took ${duration.toSeconds} seconds").as(((), v)) }
+      )
       .compile
       .drain
       .flatMap(_ => IO.println("done"))
