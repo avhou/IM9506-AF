@@ -43,22 +43,25 @@ object Dependencies {
   val scalacheckEffectsVersion   = "1.0.4"
   val shapelessVersion           = "2.3.12"
   val sqliteDriverVersion        = "3.46.0.1"
+  val tikaVersion                = "3.1.0"
   val ujsonVersion               = "3.3.1"
 
-  val cats               = "org.typelevel"             %% "cats-core"            % catsVersion
-  val catsLaws           = "org.typelevel"             %% "cats-laws"            % catsVersion       % Test
-  val catsEffectLaws     = "org.typelevel"             %% "cats-effect-laws"     % catsEffectVersion % Test
-  val catsEffect         = "org.typelevel"             %% "cats-effect"          % catsEffectVersion
-  val catsRetry          = "com.github.cb372"          %% "cats-retry"           % catsRetryVersion
-  val fs2                = "co.fs2"                    %% "fs2-core"             % fs2Version
-  val fs2Io              = "co.fs2"                    %% "fs2-io"               % fs2Version
-  val fs2reactiveStreams = "co.fs2"                    %% "fs2-reactive-streams" % fs2Version
-  val fs2Data            = "org.gnieh"                 %% "fs2-data-json"        % fs2DataVersion
-  val commonsLang        = "org.apache.commons"         % "commons-lang3"        % commonsLangVersion
-  val commonsIO          = "commons-io"                 % "commons-io"           % commonsIOVersion
-  val jacksonCore        = "com.fasterxml.jackson.core" % "jackson-core"         % jacksonVersion
-  val jsoup              = "org.jsoup"                  % "jsoup"                % jsoupVersion
-  val jwarc              = "org.netpreserve"            % "jwarc"                % jwarcVersion
+  val cats               = "org.typelevel"             %% "cats-core"                     % catsVersion
+  val catsLaws           = "org.typelevel"             %% "cats-laws"                     % catsVersion       % Test
+  val catsEffectLaws     = "org.typelevel"             %% "cats-effect-laws"              % catsEffectVersion % Test
+  val catsEffect         = "org.typelevel"             %% "cats-effect"                   % catsEffectVersion
+  val catsRetry          = "com.github.cb372"          %% "cats-retry"                    % catsRetryVersion
+  val fs2                = "co.fs2"                    %% "fs2-core"                      % fs2Version
+  val fs2Io              = "co.fs2"                    %% "fs2-io"                        % fs2Version
+  val fs2reactiveStreams = "co.fs2"                    %% "fs2-reactive-streams"          % fs2Version
+  val fs2Data            = "org.gnieh"                 %% "fs2-data-json"                 % fs2DataVersion
+  val commonsLang        = "org.apache.commons"         % "commons-lang3"                 % commonsLangVersion
+  val commonsIO          = "commons-io"                 % "commons-io"                    % commonsIOVersion
+  val jacksonCore        = "com.fasterxml.jackson.core" % "jackson-core"                  % jacksonVersion
+  val jsoup              = "org.jsoup"                  % "jsoup"                         % jsoupVersion
+  val jwarc              = "org.netpreserve"            % "jwarc"                         % jwarcVersion
+  val tikaCore           = "org.apache.tika"            % "tika-core"                     % tikaVersion
+  val tikaParsers        = "org.apache.tika"            % "tika-parsers-standard-package" % tikaVersion
 
   // sqlite dependencies
   val sqliteDriver = "org.xerial"               % "sqlite-jdbc"      % sqliteDriverVersion

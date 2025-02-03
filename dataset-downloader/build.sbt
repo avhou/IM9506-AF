@@ -33,7 +33,9 @@ lazy val downloader = {
     http4sEmberClient,
     fs2,
     jsoup,
-    jwarc
+    jwarc,
+    tikaCore,
+    tikaParsers
   )
 
   subProject("downloader")
