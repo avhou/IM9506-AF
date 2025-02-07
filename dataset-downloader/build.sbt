@@ -31,11 +31,15 @@ lazy val downloader = {
     doobieHikari,
     sqliteDriver,
     http4sEmberClient,
+    http4sCirce,
     fs2,
     jsoup,
     jwarc,
     tikaCore,
-    tikaParsers
+    tikaParsers,
+    circeCore,
+    circeParser,
+    circeMagnolia
   )
 
   subProject("downloader")
