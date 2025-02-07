@@ -23,3 +23,8 @@ indices = [
             "CC-MAIN-2022-27",
             "CC-MAIN-2022-21",
 ]
+
+# take most recent snapshot before the timeperiod
+snapshot_before_timeperiod_indices = [
+            "CC-MAIN-2022-05",
+]

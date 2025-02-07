@@ -2,6 +2,8 @@
 
 gzcat *index.paths.gz | rg -i cdx | awk -F/ '{print "xh -dco " $(NF-2) "_" $(NF-1) "_" $NF " https://data.commoncrawl.org/" $0 }' > do-downloads.sh
 
+gzcat CC-MAIN-2022-05-index.paths.gz | rg -i cdx | awk -F/ '{print "xh -dco " $(NF-2) "_" $(NF-1) "_" $NF " https://data.commoncrawl.org/" $0 }' > do-downloads-2022-05.sh
+
 gzcat CC-MAIN-2022-21-index.paths.gz | rg -i cdx | awk -F/ '{print "xh -dco " $(NF-2) "_" $(NF-1) "_" $NF " https://data.commoncrawl.org/" $0 }' > do-downloads-2022-21.sh
 gzcat CC-MAIN-2022-27-index.paths.gz | rg -i cdx | awk -F/ '{print "xh -dco " $(NF-2) "_" $(NF-1) "_" $NF " https://data.commoncrawl.org/" $0 }' > do-downloads-2022-27.sh
 gzcat CC-MAIN-2022-33-index.paths.gz | rg -i cdx | awk -F/ '{print "xh -dco " $(NF-2) "_" $(NF-1) "_" $NF " https://data.commoncrawl.org/" $0 }' > do-downloads-2022-33.sh

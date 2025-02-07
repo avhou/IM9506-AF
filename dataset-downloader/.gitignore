@@ -28,3 +28,4 @@ demo/cli/bin
 demo/cli/otllib-awv
 demo/cli/otllib-awv.bat
 .direnv/
+.envrc
