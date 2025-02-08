@@ -39,7 +39,9 @@ lazy val downloader = {
     tikaParsers,
     circeCore,
     circeParser,
-    circeMagnolia
+    circeMagnolia,
+    circeLiteral,
+    catsRetry
   )
 
   subProject("downloader")

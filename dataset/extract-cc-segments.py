@@ -98,6 +98,11 @@ def extract_cc_segments(input: str):
         for line in lines:
             print(f"""delete from index_matches where urlp3 = '{line}';""")
             conn.execute(f"""delete from index_matches where urlp3 = '{line}';""")
+    with open("exclude-uri-regex.txt", "r") as f:
+        lines = [line.strip() for line in f]
+        for line in lines:
+            print(f"""delete from index_matches where url ~ '{line}';""")
+            conn.execute(f"""delete from index_matches where url ~ '{line}';""")
     conn.execute(f"""create table urlp1_counts as select urlp1, count(*) from index_matches group by urlp1 order by 2 desc;""")
     conn.execute(f"""create table urlp2_counts as select urlp2, count(*) from index_matches group by urlp2 order by 2 desc;""")
     conn.execute(f"""create table urlp3_counts as select urlp3, count(*) from index_matches group by urlp3 order by 2 desc;""")

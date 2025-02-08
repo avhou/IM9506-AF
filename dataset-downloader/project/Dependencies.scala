@@ -99,6 +99,7 @@ object Dependencies {
 
   val circeCore          = "io.circe" %% "circe-core"                % circeVersion
   val circeParser        = "io.circe" %% "circe-parser"              % circeVersion
+  val circeLiteral       = "io.circe" %% "circe-literal"             % circeVersion
   val circeMagnolia      = "io.circe" %% "circe-magnolia-derivation" % circeMagnoliaVersion excludeAll (ExclusionRule().withOrganization("io.circe"))
   val circeGeneric       = "io.circe" %% "circe-generic"             % circeVersion excludeAll (ExclusionRule().withOrganization("com.chuusai"))
   val circeGenericExtras = "io.circe" %% "circe-generic-extras"      % circeGenericExtrasVersion excludeAll (ExclusionRule().withOrganization("com.chuusai"))

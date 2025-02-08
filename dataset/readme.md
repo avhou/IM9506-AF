@@ -28,6 +28,8 @@ this is done using ripgrep, which allows for concurrent searching.
 
 see `do-searches.sh` for an example statement. 
 
+make sure to execute this in bash, not in fish
+
 ```bash
 rg -IN --search-zip -i "\b(npo|nos|rtl|hartvannederland|volkskrant|telegraaf|nrc|trouw|ad|dutchnews|nltimes|pvv|fvd|groenlinks|pvda|vvd|partijnieuwsociaalcontract|partijvoordedieren|d66|cda|boerburgerbeweging|sp|ja21|bewegingdenk)\.nl/|\b(hbvl|gva|nieuwsblad|hln|demorgen|standaard|tijd|sudinfo|dhnet|echo|lalibre|lesoir|pvda|ps|ecolo|groen|defi|lesengages|cdenv|openvld|mr|n-va)\.be/|\b(vooruit|voltnederland|vlaamsbelang)\.org/|\bfouadahidar\.com/|\blavenir\.net/" /Volumes/data-1/cc/indices/CC-MAIN-2024-46*_indexes_cdx-*.gz | rg -IN -v "robots\.txt" | awk -f ~/ou/IM9506-AF/dataset/cc-index-to-json.awk | zstd -19 --ultra > ~/ou/IM9506-AF/dataset/hits-2024-46.zst
 ```
