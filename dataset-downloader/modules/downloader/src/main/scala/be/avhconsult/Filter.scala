@@ -70,6 +70,7 @@ object Filter extends IOApp {
       targetTransactor: HikariTransactor[IO],
       uriMappingTransactor: HikariTransactor[IO],
       channel: Channel[IO, Message],
+      nonHtmlChannel: Channel[IO, (ItemToProcess, Long)],
       tika: Tika,
       executionContext: ExecutionContext
   )
@@ -115,7 +116,16 @@ object Filter extends IOApp {
               .map(_.groupMapReduce { case (uri, _, _) => uri } { case (_, politicalParty, newsOutlet) => Mapping(politicalParty, newsOutlet) }((f, _) => f))
           subscriberDone <- Deferred[IO, Unit]
           _ <- {
-            val publisher: fs2.Stream[IO, Unit] =
+            val nonHtmlPublisher: fs2.Stream[IO, Unit] = {
+              resources.sourceTransactor.transP
+                .apply(getNonHtmlItemsToProcess)
+                .zipWithIndex
+                .through(resources.nonHtmlChannel.sendAll)
+                .void ++ fs2.Stream.eval(IO.println("done sending all non-html messages"))
+            }
+
+            val publisher: fs2.Stream[IO, Unit] = {
+              // deze stream duurt het langste, dus die laten we eerst draaien
               resources.sourceTransactor.transP
                 .apply(getHtmlItemsToProcess)
                 .zipWithIndex
@@ -123,14 +133,16 @@ object Filter extends IOApp {
                   processHtmlItemToProcess(number, itemToProcess, uriMapping, resources.executionContext)
                     .flatMap(_.traverse(resources.channel.send).void)
                     .handleErrorWith(t => IO.println(s"error processing # ${number} ${itemToProcess.url} with mime ${itemToProcess.mime} ${t.getMessage}"))
-                } ++ resources.sourceTransactor.transP
-                .apply(getNonHtmlItemsToProcess)
-                .zipWithIndex
-                .parEvalMap(20) { case (itemToProcess, number) =>
-                  processNonHtmlItemToProcess(number, itemToProcess, uriMapping, resources.tika, resources.executionContext)
-                    .flatMap(_.traverse(resources.channel.send).void)
-                    .handleErrorWith(t => IO.println(s"error processing # ${number} ${itemToProcess.url} with mime ${itemToProcess.mime} ${t.getMessage}"))
-                } ++ fs2.Stream.eval(IO.println("done sending all messages")) ++ fs2.Stream.eval(resources.channel.send(Done).void)
+                }
+                .concurrently(
+                  resources.nonHtmlChannel.stream
+                    .parEvalMapUnordered(20) { case (itemToProcess, number) =>
+                      processNonHtmlItemToProcess(number, itemToProcess, uriMapping, resources.tika, resources.executionContext)
+                        .flatMap(_.traverse(resources.channel.send).void)
+                        .handleErrorWith(t => IO.println(s"error processing # ${number} ${itemToProcess.url} with mime ${itemToProcess.mime} ${t.getMessage}"))
+                    }
+                ) ++ fs2.Stream.eval(IO.println("done sending all messages")) ++ fs2.Stream.eval(resources.channel.send(Done).void)
+            }
             val subscriber: fs2.Stream[IO, Unit] =
               resources.channel.stream.evalMap {
                 case EmptyMessage => IO.println(s"skipping empty message")
@@ -210,7 +222,7 @@ object Filter extends IOApp {
                   IO.println("subscriber is done, can release channel") >>
                   resources.channel.close.void
               }
-            fs2.Stream(publisher, subscriber, finalize).parJoinUnbounded.compile.drain
+            fs2.Stream(nonHtmlPublisher, publisher, subscriber, finalize).parJoinUnbounded.compile.drain
           }
 
         } yield None
@@ -265,8 +277,7 @@ object Filter extends IOApp {
                                 link.clearAttributes()
                                 ()
                               }
-                              val content: String     = doc.body.text
-                              val contentHash: String = bytesToHex(MessageDigest.getInstance("SHA-256").digest(content.getBytes(StandardCharsets.UTF_8)))
+                              val content: String = doc.body.text
                               doc.select("a").remove()
                               val contentWithoutLinks: String = doc.body.text
                               val linkPercentageText: Double  = 1.0 - contentWithoutLinks.length.toDouble / content.length.toDouble
@@ -279,6 +290,7 @@ object Filter extends IOApp {
                               if (hitResultContent.nonEmpty && hitResultContentWithoutLinks.nonEmpty) {
 //                                if (matchesContent.nonEmpty && matchesContentWithoutlinks.nonEmpty) {
 
+                                val contentHash: String = bytesToHex(MessageDigest.getInstance("SHA-256").digest(content.getBytes(StandardCharsets.UTF_8)))
                                 val (matchSetNoBoundary, matchesStringNoBoundary, matchesWordsStringNoBoundary) =
                                   matches(hitResultContent.matchesNoBoundaries)
                                 val (matchSetBeginBoundary, matchesStringBeginBoundary, matchesWordsStringBeginBoundary) =
@@ -370,13 +382,12 @@ object Filter extends IOApp {
                         })
                         .use { is =>
                           IO.blocking {
-                            val content: String     = tika.parseToString(is, new Metadata(), 10 * 1024 * 1024)
-                            val contentHash: String = bytesToHex(MessageDigest.getInstance("SHA-256").digest(content.getBytes(StandardCharsets.UTF_8)))
-
+                            val content: String  = tika.parseToString(is, new Metadata(), 10 * 1024 * 1024)
                             val hitResultContent = findHits(content)
 
                             if (hitResultContent.nonEmpty) {
 
+                              val contentHash: String = bytesToHex(MessageDigest.getInstance("SHA-256").digest(content.getBytes(StandardCharsets.UTF_8)))
                               val (matchSetNoBoundary, matchesStringNoBoundary, matchesWordsStringNoBoundary) =
                                 matches(hitResultContent.matchesNoBoundaries)
                               val (matchSetBeginBoundary, matchesStringBeginBoundary, matchesWordsStringBeginBoundary) =
@@ -500,10 +511,11 @@ object Filter extends IOApp {
       sourceTransactor     <- transactor(source)
       targetTransactor     <- transactor(target)
       uriMappingTransactor <- transactor("uri-mapping.sqlite")
-      channel              <- Resource.eval(Channel.bounded[IO, Message](50))
+      channel              <- Resource.eval(Channel.bounded[IO, Message](20))
+      nonHtmlChannel       <- Resource.eval(Channel.bounded[IO, (ItemToProcess, Long)](1))
       tika                 <- Resource.pure(new Tika())
       pool                 <- Resource.make(IO.blocking(Executors.newFixedThreadPool(20)))(es => IO.blocking(es.shutdown())).map(ExecutionContext.fromExecutor)
-    } yield Resources(sourceTransactor, targetTransactor, uriMappingTransactor, channel, tika, pool)
+    } yield Resources(sourceTransactor, targetTransactor, uriMappingTransactor, channel, nonHtmlChannel, tika, pool)
 
   def transactor(name: String): Resource[IO, HikariTransactor[IO]] =
     for {
