@@ -37,10 +37,18 @@ object Filter extends IOApp {
       linkPercentage: Double,
       contentHash: String,
       languages: Option[String],
-      totalNrHits: Int,
-      distinctNrHits: Int,
-      matches: String,
-      matchesWords: String,
+      totalNrHitsNoWordBoundary: Int,
+      distinctNrHitsNoWordBoundary: Int,
+      matchesNoWordBoundary: String,
+      matchesWordsNoWordBoundary: String,
+      totalNrHitsBeginWordBoundary: Int,
+      distinctNrHitsBeginWordBoundary: Int,
+      matchesBeginWordBoundary: String,
+      matchesWordsBeginWordBoundary: String,
+      totalNrHitsBeginAndEndWordBoundary: Int,
+      distinctNrHitsBeginAndEndWordBoundary: Int,
+      matchesBeginAndEndWordBoundary: String,
+      matchesWordsBeginAndEndWordBoundary: String,
       politicalParty: Boolean,
       newsOutlet: Boolean
   ) extends Message
@@ -69,8 +77,12 @@ object Filter extends IOApp {
 
   // should we search on word boundaries?  ie """\b(migrant|...)\b""".r
   // or only start on word boundaries?  ie """\b(migrant|...)""".r
-  val pattern =
+  val patternNoWordBoundary =
+    """(migrant|immigrant|emigrant|migratie|immigratie|vluchteling|oorlogsvluchteling|ontheemde|vluchtende bevolking|verspreide bevolking|herplaatste bevolking|asielzoeker|buitenlander|migration|immigration|refugee|war refugees|displaced people|fleeing population|dispersed population|relocated population|asylum seeker|diaspora|expatriate|expat|émigrant|réfugié|réfugiés de guerre|personnes déplacées|population fuyante|population dispersée|personne relocalisée|demandeur d'asile|étranger|expatrié)""".r
+  val patternBeginWordBoundary =
     """\b(migrant|immigrant|emigrant|migratie|immigratie|vluchteling|oorlogsvluchteling|ontheemde|vluchtende bevolking|verspreide bevolking|herplaatste bevolking|asielzoeker|buitenlander|migration|immigration|refugee|war refugees|displaced people|fleeing population|dispersed population|relocated population|asylum seeker|diaspora|expatriate|expat|émigrant|réfugié|réfugiés de guerre|personnes déplacées|population fuyante|population dispersée|personne relocalisée|demandeur d'asile|étranger|expatrié)""".r
+  val patternBeginAndEndWordBoundary =
+    """\b(migrant|migrants|migranten|immigrant|immigrants|emigrant|emigrants|migratie|immigratie|vluchteling|vluchtelingen|oorlogsvluchteling|oorlogsvluchtelingen|ontheemde|vluchtende bevolking|verspreide bevolking|herplaatste bevolking|asielzoeker|asielzoekers|buitenlander|buitenlanders|migration|immigration|refugee|refugees|war refugees|displaced people|fleeing population|dispersed population|relocated population|asylum seeker|asylum seekers|diaspora|expatriate|expatriates|expat|expats|émigrant|émigrants|réfugié|réfugiés|réfugiés de guerre|personnes déplacées|population fuyante|population dispersée|personne relocalisée|demandeur d'asile|demandeurs d'asile|étranger|étrangers|expatrié|expatriés)\b""".r
 
   override def run(args: List[String]): IO[ExitCode] = {
     val source = args.headOption.getOrElse(throw new RuntimeException("geef een source database naam op"))
@@ -140,10 +152,18 @@ object Filter extends IOApp {
                                   link_percentage,
                                   content_hash,
                                   languages,
-                                  total_nr_hits,
-                                  distinct_nr_hits,
-                                  matches,
-                                  matches_words,
+                                  total_nr_hits_no_wb,
+                                  distinct_nr_hits_no_wb,
+                                  matches_no_wb,
+                                  matches_words_no_wb,
+                                  total_nr_hits_begin_wb,
+                                  distinct_nr_hits_begin_wb,
+                                  matches_begin_wb,
+                                  matches_words_begin_wb,
+                                  total_nr_hits_begin_and_end_wb,
+                                  distinct_nr_hits_begin_and_end_wb,
+                                  matches_begin_and_end_wb,
+                                  matches_words_begin_and_end_wb,
                                   political_party,
                                   news_outlet,
                                   relevant,
@@ -161,10 +181,18 @@ object Filter extends IOApp {
                                   ${msg.linkPercentage},
                                   ${msg.contentHash},
                                   ${msg.languages},
-                                  ${msg.totalNrHits},
-                                  ${msg.distinctNrHits},
-                                  ${msg.matches},
-                                  ${msg.matchesWords},
+                                  ${msg.totalNrHitsNoWordBoundary},
+                                  ${msg.distinctNrHitsNoWordBoundary},
+                                  ${msg.matchesNoWordBoundary},
+                                  ${msg.matchesWordsNoWordBoundary},
+                                  ${msg.totalNrHitsBeginWordBoundary},
+                                  ${msg.distinctNrHitsBeginWordBoundary},
+                                  ${msg.matchesBeginWordBoundary},
+                                  ${msg.matchesWordsBeginWordBoundary},
+                                  ${msg.totalNrHitsBeginAndEndWordBoundary},
+                                  ${msg.distinctNrHitsBeginAndEndWordBoundary},
+                                  ${msg.matchesBeginAndEndWordBoundary},
+                                  ${msg.matchesWordsBeginAndEndWordBoundary},
                                   ${msg.politicalParty},
                                   ${msg.newsOutlet},
                                   null,
@@ -243,13 +271,21 @@ object Filter extends IOApp {
                               val contentWithoutLinks: String = doc.body.text
                               val linkPercentageText: Double  = 1.0 - contentWithoutLinks.length.toDouble / content.length.toDouble
 
-                              val matchesContent             = pattern.findAllMatchIn(content).toList
-                              val matchesContentWithoutlinks = pattern.findAllMatchIn(contentWithoutLinks).toList
+                              val hitResultContent             = findHits(content)
+                              val hitResultContentWithoutLinks = findHits(contentWithoutLinks)
+//                              val matchesContent             = patternBeginWordBoundary.findAllMatchIn(content).toList
+//                              val matchesContentWithoutlinks = patternBeginWordBoundary.findAllMatchIn(contentWithoutLinks).toList
 
-                              if (matchesContent.nonEmpty && matchesContentWithoutlinks.nonEmpty) {
+                              if (hitResultContent.nonEmpty && hitResultContentWithoutLinks.nonEmpty) {
+//                                if (matchesContent.nonEmpty && matchesContentWithoutlinks.nonEmpty) {
 
-                                val (matchSet, matchesString, matchesWordsString) = matches(matchesContent)
-                                val (key, mapping)                                = findMapping(item, uriMappings)
+                                val (matchSetNoBoundary, matchesStringNoBoundary, matchesWordsStringNoBoundary) =
+                                  matches(hitResultContent.matchesNoBoundaries)
+                                val (matchSetBeginBoundary, matchesStringBeginBoundary, matchesWordsStringBeginBoundary) =
+                                  matches(hitResultContent.matchesBeginBoundaries)
+                                val (matchSetBeginAndEndBoundary, matchesStringBeginAndEndBoundary, matchesWordsStringBeginAndEndBoundary) =
+                                  matches(hitResultContent.matchesBeginAndEndBoundaries)
+                                val (key, mapping) = findMapping(item, uriMappings)
 
                                 Some(
                                   ChannelMessage(
@@ -266,10 +302,18 @@ object Filter extends IOApp {
                                     linkPercentage = linkPercentageText,
                                     contentHash = contentHash,
                                     languages = item.languages,
-                                    totalNrHits = matchesContent.size,
-                                    distinctNrHits = matchSet.size,
-                                    matches = matchesString,
-                                    matchesWords = matchesWordsString,
+                                    totalNrHitsNoWordBoundary = hitResultContent.matchesNoBoundaries.size,
+                                    distinctNrHitsNoWordBoundary = matchSetNoBoundary.size,
+                                    matchesNoWordBoundary = matchesStringNoBoundary,
+                                    matchesWordsNoWordBoundary = matchesWordsStringNoBoundary,
+                                    totalNrHitsBeginWordBoundary = hitResultContent.matchesBeginBoundaries.size,
+                                    distinctNrHitsBeginWordBoundary = matchSetBeginBoundary.size,
+                                    matchesBeginWordBoundary = matchesStringBeginBoundary,
+                                    matchesWordsBeginWordBoundary = matchesWordsStringBeginBoundary,
+                                    totalNrHitsBeginAndEndWordBoundary = hitResultContent.matchesBeginAndEndBoundaries.size,
+                                    distinctNrHitsBeginAndEndWordBoundary = matchSetBeginAndEndBoundary.size,
+                                    matchesBeginAndEndWordBoundary = matchesStringBeginAndEndBoundary,
+                                    matchesWordsBeginAndEndWordBoundary = matchesWordsStringBeginAndEndBoundary,
                                     politicalParty = mapping.politicalParty,
                                     newsOutlet = mapping.newsOutlet
                                   )
@@ -285,6 +329,22 @@ object Filter extends IOApp {
                   case _ => IO(None)
                 }
     } yield result
+
+  final case class HitResult(
+      matchesNoBoundaries: List[Regex.Match],
+      matchesBeginBoundaries: List[Regex.Match],
+      matchesBeginAndEndBoundaries: List[Regex.Match]
+  ) {
+    def nonEmpty: Boolean =
+      matchesNoBoundaries.nonEmpty || matchesBeginBoundaries.nonEmpty || matchesBeginAndEndBoundaries.nonEmpty
+  }
+
+  private def findHits(content: String): HitResult =
+    HitResult(
+      patternNoWordBoundary.findAllMatchIn(content).toList,
+      patternBeginWordBoundary.findAllMatchIn(content).toList,
+      patternBeginAndEndWordBoundary.findAllMatchIn(content).toList
+    )
 
   def processNonHtmlItemToProcess(
       number: Long,
@@ -313,12 +373,17 @@ object Filter extends IOApp {
                             val content: String     = tika.parseToString(is, new Metadata(), 10 * 1024 * 1024)
                             val contentHash: String = bytesToHex(MessageDigest.getInstance("SHA-256").digest(content.getBytes(StandardCharsets.UTF_8)))
 
-                            val matchesContent = pattern.findAllMatchIn(content).toList
+                            val hitResultContent = findHits(content)
 
-                            if (matchesContent.nonEmpty) {
+                            if (hitResultContent.nonEmpty) {
 
-                              val (matchSet, matchesString, matchesWordsString) = matches(matchesContent)
-                              val (key, mapping)                                = findMapping(item, uriMappings)
+                              val (matchSetNoBoundary, matchesStringNoBoundary, matchesWordsStringNoBoundary) =
+                                matches(hitResultContent.matchesNoBoundaries)
+                              val (matchSetBeginBoundary, matchesStringBeginBoundary, matchesWordsStringBeginBoundary) =
+                                matches(hitResultContent.matchesBeginBoundaries)
+                              val (matchSetBeginAndEndBoundary, matchesStringBeginAndEndBoundary, matchesWordsStringBeginAndEndBoundary) =
+                                matches(hitResultContent.matchesBeginAndEndBoundaries)
+                              val (key, mapping) = findMapping(item, uriMappings)
 
                               Some(
                                 ChannelMessage(
@@ -335,10 +400,18 @@ object Filter extends IOApp {
                                   linkPercentage = 0,
                                   contentHash = contentHash,
                                   languages = item.languages,
-                                  totalNrHits = matchesContent.size,
-                                  distinctNrHits = matchSet.size,
-                                  matches = matchesString,
-                                  matchesWords = matchesWordsString,
+                                  totalNrHitsNoWordBoundary = hitResultContent.matchesNoBoundaries.size,
+                                  distinctNrHitsNoWordBoundary = matchSetNoBoundary.size,
+                                  matchesNoWordBoundary = matchesStringNoBoundary,
+                                  matchesWordsNoWordBoundary = matchesWordsStringNoBoundary,
+                                  totalNrHitsBeginWordBoundary = hitResultContent.matchesBeginBoundaries.size,
+                                  distinctNrHitsBeginWordBoundary = matchSetBeginBoundary.size,
+                                  matchesBeginWordBoundary = matchesStringBeginBoundary,
+                                  matchesWordsBeginWordBoundary = matchesWordsStringBeginBoundary,
+                                  totalNrHitsBeginAndEndWordBoundary = hitResultContent.matchesBeginAndEndBoundaries.size,
+                                  distinctNrHitsBeginAndEndWordBoundary = matchSetBeginAndEndBoundary.size,
+                                  matchesBeginAndEndWordBoundary = matchesStringBeginAndEndBoundary,
+                                  matchesWordsBeginAndEndWordBoundary = matchesWordsStringBeginAndEndBoundary,
                                   politicalParty = mapping.politicalParty,
                                   newsOutlet = mapping.newsOutlet
                                 )
@@ -398,10 +471,18 @@ object Filter extends IOApp {
          link_percentage double,
          content_hash text,
          languages text,
-         total_nr_hits,
-         distinct_nr_hits,
-         matches text,
-         matches_words text,
+         total_nr_hits_no_wb,
+         distinct_nr_hits_no_wb,
+         matches_no_wb text,
+         matches_words_no_wb text,
+         total_nr_hits_begin_wb,
+         distinct_nr_hits_begin_wb,
+         matches_begin_wb text,
+         matches_words_begin_wb text,
+         total_nr_hits_begin_and_end_wb,
+         distinct_nr_hits_begin_and_end_wb,
+         matches_begin_and_end_wb text,
+         matches_words_begin_and_end_wb text,
          political_party boolean,
          news_outlet boolean,
          relevant boolean,
