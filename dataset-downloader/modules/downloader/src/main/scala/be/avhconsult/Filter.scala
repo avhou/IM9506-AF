@@ -21,6 +21,7 @@ import scala.concurrent.ExecutionContext
 import scala.util.matching.Regex
 
 object Filter extends IOApp {
+  val POOL_SIZE = 20
 
   sealed trait Message
   final case class ChannelMessage(
@@ -70,6 +71,7 @@ object Filter extends IOApp {
       targetTransactor: HikariTransactor[IO],
       uriMappingTransactor: HikariTransactor[IO],
       channel: Channel[IO, Message],
+      htmlChannel: Channel[IO, (ItemToProcess, Long)],
       nonHtmlChannel: Channel[IO, (ItemToProcess, Long)],
       tika: Tika,
       executionContext: ExecutionContext
@@ -116,32 +118,37 @@ object Filter extends IOApp {
               .map(_.groupMapReduce { case (uri, _, _) => uri } { case (_, politicalParty, newsOutlet) => Mapping(politicalParty, newsOutlet) }((f, _) => f))
           subscriberDone <- Deferred[IO, Unit]
           _ <- {
-            val nonHtmlPublisher: fs2.Stream[IO, Unit] = {
+            val nonHtmlPublisher: fs2.Stream[IO, Unit] =
               resources.sourceTransactor.transP
                 .apply(getNonHtmlItemsToProcess)
                 .zipWithIndex
                 .through(resources.nonHtmlChannel.sendAll)
                 .void ++ fs2.Stream.eval(IO.println("done sending all non-html messages"))
-            }
 
-            val publisher: fs2.Stream[IO, Unit] = {
-              // deze stream duurt het langste, dus die laten we eerst draaien
+            val htmlPublisher: fs2.Stream[IO, Unit] =
               resources.sourceTransactor.transP
                 .apply(getHtmlItemsToProcess)
                 .zipWithIndex
-                .parEvalMap(20) { case (itemToProcess, number) =>
-                  processHtmlItemToProcess(number, itemToProcess, uriMapping, resources.executionContext)
-                    .flatMap(_.traverse(resources.channel.send).void)
-                    .handleErrorWith(t => IO.println(s"error processing # ${number} ${itemToProcess.url} with mime ${itemToProcess.mime} ${t.getMessage}"))
-                }
-                .concurrently(
+                .through(resources.htmlChannel.sendAll)
+                .void ++ fs2.Stream.eval(IO.println("done sending all html messages"))
+
+            val publisher: fs2.Stream[IO, Unit] = {
+              fs2
+                .Stream(
+                  resources.htmlChannel.stream
+                    .parEvalMapUnordered(POOL_SIZE / 2) { case (itemToProcess, number) =>
+                      processHtmlItemToProcess(number, itemToProcess, uriMapping, resources.executionContext)
+                        .flatMap(_.traverse(resources.channel.send).void)
+                        .handleErrorWith(t => IO.println(s"error processing # ${number} ${itemToProcess.url} with mime ${itemToProcess.mime} ${t.getMessage}"))
+                    },
                   resources.nonHtmlChannel.stream
-                    .parEvalMapUnordered(20) { case (itemToProcess, number) =>
+                    .parEvalMapUnordered(POOL_SIZE / 2) { case (itemToProcess, number) =>
                       processNonHtmlItemToProcess(number, itemToProcess, uriMapping, resources.tika, resources.executionContext)
                         .flatMap(_.traverse(resources.channel.send).void)
                         .handleErrorWith(t => IO.println(s"error processing # ${number} ${itemToProcess.url} with mime ${itemToProcess.mime} ${t.getMessage}"))
                     }
-                ) ++ fs2.Stream.eval(IO.println("done sending all messages")) ++ fs2.Stream.eval(resources.channel.send(Done).void)
+                )
+                .parJoinUnbounded ++ fs2.Stream.eval(IO.println("done sending all messages")) ++ fs2.Stream.eval(resources.channel.send(Done).void)
             }
             val subscriber: fs2.Stream[IO, Unit] =
               resources.channel.stream.evalMap {
@@ -222,7 +229,7 @@ object Filter extends IOApp {
                   IO.println("subscriber is done, can release channel") >>
                   resources.channel.close.void
               }
-            fs2.Stream(nonHtmlPublisher, publisher, subscriber, finalize).parJoinUnbounded.compile.drain
+            fs2.Stream(nonHtmlPublisher, htmlPublisher, publisher, subscriber, finalize).parJoinUnbounded.compile.drain
           }
 
         } yield None
@@ -511,11 +518,12 @@ object Filter extends IOApp {
       sourceTransactor     <- transactor(source)
       targetTransactor     <- transactor(target)
       uriMappingTransactor <- transactor("uri-mapping.sqlite")
-      channel              <- Resource.eval(Channel.bounded[IO, Message](20))
+      channel              <- Resource.eval(Channel.bounded[IO, Message](POOL_SIZE))
+      htmlChannel          <- Resource.eval(Channel.bounded[IO, (ItemToProcess, Long)](1))
       nonHtmlChannel       <- Resource.eval(Channel.bounded[IO, (ItemToProcess, Long)](1))
       tika                 <- Resource.pure(new Tika())
-      pool                 <- Resource.make(IO.blocking(Executors.newFixedThreadPool(20)))(es => IO.blocking(es.shutdown())).map(ExecutionContext.fromExecutor)
-    } yield Resources(sourceTransactor, targetTransactor, uriMappingTransactor, channel, nonHtmlChannel, tika, pool)
+      pool <- Resource.make(IO.blocking(Executors.newFixedThreadPool(POOL_SIZE)))(es => IO.blocking(es.shutdown())).map(ExecutionContext.fromExecutor)
+    } yield Resources(sourceTransactor, targetTransactor, uriMappingTransactor, channel, htmlChannel, nonHtmlChannel, tika, pool)
 
   def transactor(name: String): Resource[IO, HikariTransactor[IO]] =
     for {
