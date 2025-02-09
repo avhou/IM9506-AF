@@ -31,12 +31,10 @@ def delete_superfluous_urls(target_db: str):
         for line in lines:
             print(f"""processing regex = '{line}';""")
             conn.execute(f"""delete from urls where url ~ '{line}';""")
-    conn.execute(f"""copy (select url, urlp1, urlp2, urlp3 from urls order by url asc) TO 'na_deletes.csv';""")
     count_after = conn.execute(f"""select count(*) from urls""").fetchone()[0]
     print(f"count before : {count_before}, count after : {count_after}, delta : {count_before - count_after}")
     print(f"deleting superfluous rows")
     conn.execute(f"""delete from target_db.download_progress where url not in (select url from urls);""")
-    print(f"vacuum")
     print(f"vacuum")
     sqlite_conn = sqlite3.connect(target_db)
     sqlite_conn.execute("vacuum;")
