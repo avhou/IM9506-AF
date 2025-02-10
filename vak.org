@@ -57,6 +57,23 @@ https://euvsdisinfo.eu/ukraine/
 
 commonly used narratives :
 https://edmo.eu/publications/disinformers-use-similar-arguments-and-techniques-to-steer-hate-against-migrants-from-ukraine-or-the-global-south-2/
+https://benedmo.eu/
+https://belux.edmo.eu
+https://www.logicallyfacts.com/
+https://www.migrationpolicy.org/article/disinformation-migration-how-fake-news-spreads
+https://www.europarl.europa.eu/RegData/etudes/IDAN/2021/653641/EXPO_IDA(2021)653641_EN.pdf
+
+
+https://crisiscentrum.be/nl/risicos-belgie/veiligheidsrisicos/desinformatie/desinformatie
+->
+https://www.mediawijs.be/nl
+https://www.mediawijsheid.nl/nepnieuws/
+https://www.watwat.be/fake-news/hoe-weet-ik-online-tekst-fotos-videos-echt-fake-zijn
+https://www.isdatechtzo.nl/
+
+
+EuroHPC support :
+We can also be contacted by email at: servicedesk@lxp.lu
 
 ** tiktok
 [[https://developers.tiktok.com/doc/vce-getting-started][dev account getting started]]
@@ -71,3 +88,37 @@ https://edmo.eu/publications/disinformers-use-similar-arguments-and-techniques-t
 [[https://www.kaggle.com/code/akshayr009/fakenewsdetection]]
 https://www.kaggle.com/datasets/corrieaar/disinformation-articles
 https://www.kaggle.com/datasets/imuhammad/euvsdisinfo-disinformation-database
+
+
+* Mails
+
+Dear Clara and Stefano,
+
+I was working with the tiktok research API and noticed this is a severely limited API.  
+
+Some limitations :
+
+- max 1000 calls per day, max 100.000 results per day
+- even if you ask for the maximum of 100 videos in a call, you almost always get less than that (due to deleted videos, ...), meaning the amount of videos you can retrieve will be substantially less than 100.000
+- you need to throttle your calls, one call every 10 seconds works, but not more than that.
+- resuming the download of a specific day/query seems difficult as results are returned in descending video_id, but you are not allowed to specify that you want all videos with a video_id < previous_last_video_id
+- no decent filtering in api on keywords is available, so you need to download everything and then filter
+- you cannot use extented time periods and need to fetch this in pieces.
+- you do not know how many results a query will return in total
+
+Since I don't know how many videos are created per day and I can only do 1000 calls per day, this poses a problem.
+
+I was wondering whether you have used this API yourself?  If you have, in particular I would be interested in knowing if you succeeded in resuming from a last succesful id?
+
+There is also the VCE environment that should allow for batch submissions which I will look into.
+
+In the meantime, looking at the fields we can use to filter (and thus restrict the number of possible videos), I think the region_code might be interesting.  From the docs :
+
+"A two digit code for the country where the video creator registered their account"
+
+Could we limit the region_code to Belgium + the Netherlands + Ukraine + ... ?  If you see other countries that we should put into this list, please let me know.
+perhaps we can play with the video_length field as well.   From the docs :
+
+"The duration of the video SHORT: <15s MID: 15 ~60s LONG: 1~5min EXTRA_LONG: >5min"
+
+A priori I would rather keep all videos, also the short ones, but if needed, this could be used as a filter as well.
