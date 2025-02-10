@@ -73,7 +73,6 @@ model = MarianMTModel.from_pretrained("Helsinki-NLP/opus-mt-nl-en")
 # Force CPU execution
 device = torch.device("cpu")
 model.to("cpu")
-tokenizer.to("cpu")
 def translate(text):
     print(f"generating inputs")
     inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True)
