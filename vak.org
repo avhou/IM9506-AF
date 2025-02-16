@@ -74,6 +74,10 @@ https://www.isdatechtzo.nl/
 
 EuroHPC support :
 We can also be contacted by email at: servicedesk@lxp.lu
+https://docs.lxp.lu/first-steps/handling_jobs/#viewing-jobs-in-the-queue
+
+python scripts en modellen downloaden op voorhand :
+https://docs.lxp.lu/howto/HFInference/
 
 ** tiktok
 [[https://developers.tiktok.com/doc/vce-getting-started][dev account getting started]]
@@ -122,3 +126,31 @@ perhaps we can play with the video_length field as well.   From the docs :
 "The duration of the video SHORT: <15s MID: 15 ~60s LONG: 1~5min EXTRA_LONG: >5min"
 
 A priori I would rather keep all videos, also the short ones, but if needed, this could be used as a filter as well.
+
+** <2025-02-12 Wed> 
+
+Dear Clara and Stefano,
+
+I have tested the VCE (batch environment) of TikTok Research API.  Unfortunately, this environment only allows to fetch aggregated data, i.e. you can ask for counts of videos but not for individual video ids.  Other aggregates like max/min date etc are allowed but this is not what we are searching for.  Furthermore, filtering on countries is not supported.
+
+That leaves us with the online API. To restate the main limitations : 1.000 API calls per day / max 100.000 items per day.  Many API calls return only a fraction of the max 100 items permitted per call.
+
+It took me 3 days worth of API calls to download just the video ids (not even the comments yet) for a single day (2022-02-01), filtering on countries NL and BE.   Given that we are talking about a time period of almost 2 years (2022-02-01 -> 2024-11-30) and a couple of months to actually do the work, this is not going to work.  Also, most of the text is going to be in the comments, because a) most descriptions of videos are either absent or just a list of hashtags and b) the voice2text content was only present in 5 out of 71.460 videos.
+
+We need a more agressive filtering strategy.  We could do this by :
+
+- limiting time period
+- limiting countries to just one (NL or BE)
+- limiting to videos containing (many) comments- ... ?
+
+
+Limiting to one country does not seem like a good strategy.   Even if we assume this would cut the number of videos in half, that would still mean 1 + 1/2 day of downloading per day just for the videos.
+We could consider limiting the time period to the start of the war (first couple of weeks / months), where probably the most buzz around the war and its consequences was generated.
+Limiting to videos containing many comments might be interesting.  p10 percentiles tell me p50 = 1, p80 = 5 and p90 = 12.  Please note if we focus on large comment counts, these comments have to be downloaded and this will "cost" API calls as well.
+
+We could go for a combination of the above or come up with other strategies.
+
+The research API does not allow to download videos, but there are tools that are capable of downloading videos given an id. If this works out, we could perhaps try some automatic audio transcription.
+
+Interested in hearing your thoughts on this.
+
