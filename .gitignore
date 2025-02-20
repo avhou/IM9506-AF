@@ -1,2 +1,4 @@
 dataset/__pycache__
 dataset/request_log.log
+**/.idea
+**/venv
