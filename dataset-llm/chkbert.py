@@ -1,36 +1,31 @@
-from transformers import MT5Tokenizer, MT5ForConditionalGeneration
+from typing import List, Callable
 import torch
 
-print("loading model")
+from keybert import KeyBERT
+from keyphrase_vectorizers import KeyphraseCountVectorizer
+from sentence_transformers import SentenceTransformer
 
-# Load the tokenizer and model
-model_name = "google/mt5-xl"
-tokenizer = MT5Tokenizer.from_pretrained(model_name)
-# must use safetensor + torch.float16 for mac m1
-model = MT5ForConditionalGeneration.from_pretrained(model_name, use_safetensors=True, torch_dtype=torch.float16)
-print("model was loaded")
+from chunkey_bert.model import ChunkeyBert
+import re
 
-print("move model to MPS")
-model.to("mps")
+sentence_model: SentenceTransformer = SentenceTransformer(model_name_or_path="all-MiniLM-L6-v2")
+keybert: KeyBERT = KeyBERT(model=sentence_model)
+keyphrase_vectorizer: KeyphraseCountVectorizer = KeyphraseCountVectorizer(spacy_pipeline="en_core_web_trf")
 
+chunkey_bert: ChunkeyBert = ChunkeyBert(keybert=keybert)
+chunker: Callable[[str], List[str]] = lambda text: [t for t in text.split("\n\n") if len(t) > 25]
+chunker_leestekens: Callable[[str], List[str]] = lambda text: [t for t in re.split("\.|\?|!", text) if len(t) > 25]
 
-# Example long text
-text = """
-Premier De Wever wil stappen zetten naar "Europese defensiemacht"
-"Soms gebeurt er op één week een decennium aan geschiedenis. Misschien zitten we wel op zo'n punt in de geschiedenis dat er veel mogelijk wordt", zegt premier De Wever in een opmerkelijk interview met Villa politica. Hij houdt daarbij een pleidooi om "stappen te zetten naar een Europese defensiemacht".
-De Wever benadrukt dat die stappen ook gewoon een noodzaak zijn. "We moeten ons voorbereiden op een dreiging van een tiran in het oosten die niet onmiddellijk zal verdwijnen. De militaire capaciteit in Rusland wordt opgebouwd. Ze produceren op twee maanden meer dan wij op één jaar. Tirannieke leiders met grote legers, de geschiedenis leest zich als een handboek, wat dat betreft. Die gaan dat vroeg of laat gebruiken en ons testen."  
-De Wever benadrukt nog dat Europa de verdediging niet moet overlaten aan de grenslanden van Rusland. "We doen in Europa al behoorlijk veel samen voor defensie, alleen gebeurt dat altijd in gespreide slagorde. Misschien is het nu tijd voor een stevige Europese pilaar in het Navo-verhaal, met minder aparte wapensystemen en een doordacht aankoopbeleid. Dan zouden we met dezelfde budgetten al ongelooflijk veel meer kunnen doen."
-"""
+with open("translated_text.txt", "r") as f:
+    text = f.read()
 
-# Preprocess input text for summarization
-input_text = "Summarize the following Dutch text, using a maximum of 5 words.  This is the text to summarize : " + text
-inputs = tokenizer(input_text, return_tensors="pt", max_length=512, truncation=True)
+results = chunker_leestekens(text)
+print(f"aantal chunks: {len(results)}")
+print(chunker_leestekens(text))
 
-print(f"move tokens to MPS")
-inputs = {k: v.to("mps") for k, v in inputs.items()}
-
-# Generate summary, do not use inputs.input_ids
-summary_ids = model.generate(inputs["input_ids"], max_length=50, num_beams=5, length_penalty=2.0, early_stopping=True)
-summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True, clean_up_tokenization_spaces=True)
-
-print("Summary:", summary)
+print(
+chunkey_bert.extract_keywords(
+    docs=text, num_keywords=5, chunker=chunker_leestekens, vectorizer=keyphrase_vectorizer, nr_candidates=10, top_n=3
+)
+)
+# print(chunkey_bert.extract_keywords(docs=text, num_keywords=5, vectorizer=keyphrase_vectorizer, nr_candidates=20, top_n=10))
