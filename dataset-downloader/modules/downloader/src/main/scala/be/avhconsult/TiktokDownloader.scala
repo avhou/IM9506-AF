@@ -42,15 +42,20 @@ object TiktokDownloader extends IOApp {
   )
 
   final case class Pagination(cursor: Long, searchId: String)
+
   final case class VideoProgress(date: String, lastId: Option[String], lastCursor: Option[Long], lastSearchId: Option[String], downloaded: Boolean)
+
   final case class VideoCommentProgress(date: String, lastId: Option[String], lastCursor: Option[Long], lastSearchId: Option[String], downloaded: Boolean)
+
   final case class VideoResult(data: VideoDataResult)
+
   object VideoResult {
     implicit lazy val encoder: Encoder[VideoResult] = deriveMagnoliaEncoder[VideoResult]
     implicit lazy val decoder: Decoder[VideoResult] = deriveMagnoliaDecoder[VideoResult]
   }
 
   final case class VideoDataResult(cursor: Option[Long], has_more: Boolean, search_id: Option[String], videos: List[Video])
+
   object VideoDataResult {
     implicit lazy val encoder: Encoder[VideoDataResult] = deriveMagnoliaEncoder[VideoDataResult]
     implicit lazy val decoder: Decoder[VideoDataResult] = deriveMagnoliaDecoder[VideoDataResult]
@@ -59,23 +64,27 @@ object TiktokDownloader extends IOApp {
   final case class Video(
       id: Long,
       video_description: Option[String],
+      username: String,
       // UTC Unix epoch (in seconds) of when the TikTok video was posted. (Inherited field from TNS research API)
       create_time: Long,
       comment_count: Option[Long],
       voice_to_text: Option[String]
   )
+
   object Video {
     implicit lazy val encoder: Encoder[Video] = deriveMagnoliaEncoder[Video]
     implicit lazy val decoder: Decoder[Video] = deriveMagnoliaDecoder[Video]
   }
 
   final case class VideoCommentResult(data: VideoCommentDataResult)
+
   object VideoCommentResult {
     implicit lazy val encoder: Encoder[VideoCommentResult] = deriveMagnoliaEncoder[VideoCommentResult]
     implicit lazy val decoder: Decoder[VideoCommentResult] = deriveMagnoliaDecoder[VideoCommentResult]
   }
 
   final case class VideoCommentDataResult(cursor: Option[Long], has_more: Boolean, search_id: Option[String], comments: List[VideoComment])
+
   object VideoCommentDataResult {
     implicit lazy val encoder: Encoder[VideoCommentDataResult] = deriveMagnoliaEncoder[VideoCommentDataResult]
     implicit lazy val decoder: Decoder[VideoCommentDataResult] = deriveMagnoliaDecoder[VideoCommentDataResult]
@@ -89,6 +98,7 @@ object TiktokDownloader extends IOApp {
       // UTC Unix epoch (in seconds) of when the TikTok video was posted. (Inherited field from TNS research API)
       create_time: Long
   )
+
   object VideoComment {
     implicit lazy val encoder: Encoder[VideoComment] = deriveMagnoliaEncoder[VideoComment]
     implicit lazy val decoder: Decoder[VideoComment] = deriveMagnoliaDecoder[VideoComment]
@@ -121,30 +131,31 @@ object TiktokDownloader extends IOApp {
                                           .compile
                                           .toList
                    _ <- teVerwerkenVideos
-                          .take(1)
                           .traverse(progress => resumeVideoDownload(progress, tokenService, resources.client, resources.transactor))
                  } yield ()
                }
-//          _ <- IO.println("creating target tables (video comments)")
-//          _ <- (createVideoCommentProgressTable >> createVideoCommentsTable).transact(resources.transactor)
-//          _ <- IO.println("preparing video comment progress")
-//          _ <- prepareVideoCommentProgress(resources.transactor)
-//          _ <- retryingOnAllErrors(RetryPolicies.limitRetries[IO](100), onError) {
-//                 for {
-//                   teVerwerkenVideoComments <- teVerwerkenVideoComments
-//                                                 .transact(resources.transactor)
-//                                                 .compile
-//                                                 .toList
-//                   _ <- teVerwerkenVideoComments
-//                          .take(1)
-//                          .traverse(progress => resumeVideoCommentDownload(progress, tokenService, resources.client, resources.transactor))
-//                 } yield ()
-//               }
+          //          _ <- IO.println("creating target tables (video comments)")
+          //          _ <- (createVideoCommentProgressTable >> createVideoCommentsTable).transact(resources.transactor)
+          //          _ <- IO.println("preparing video comment progress")
+          //          _ <- prepareVideoCommentProgress(resources.transactor)
+          //          _ <- retryingOnAllErrors(RetryPolicies.limitRetries[IO](100), onError) {
+          //                 for {
+          //                   teVerwerkenVideoComments <- teVerwerkenVideoComments
+          //                                                 .transact(resources.transactor)
+          //                                                 .compile
+          //                                                 .toList
+          //                   _ <- teVerwerkenVideoComments
+          //                          .take(1)
+          //                          .traverse(progress => resumeVideoCommentDownload(progress, tokenService, resources.client, resources.transactor))
+          //                 } yield ()
+          //               }
         } yield None
       }
 
   def onError(e: Throwable, details: RetryDetails): IO[Unit] = IO.println(s"error: $e, details: $details")
+
   final case class VideoResumeData(progress: Option[VideoProgress], pagination: Option[Pagination])
+
   final case class VideoCommentResumeData(progress: Option[VideoCommentProgress], pagination: Option[Pagination])
 
   def resumeVideoDownload(progress: VideoProgress, tokenService: TokenService, client: Client[IO], transactor: Transactor[IO]): IO[Unit] =
@@ -164,6 +175,44 @@ object TiktokDownloader extends IOApp {
       .drain >> markDownloaded(progress.date).transact(transactor).void
 
   val regionCodes = List("NL", "BE")
+  val keywords = List(
+    "migrant",
+    "immigrant",
+    "emigrant",
+    "migratie",
+    "immigratie",
+    "vluchteling",
+    "oorlogsvluchteling",
+    "ontheemde",
+    "vluchtende bevolking",
+    "verspreide bevolking",
+    "herplaatste bevolking",
+    "asielzoeker",
+    "buitenlander",
+    "migration",
+    "immigration",
+    "refugee",
+    "war refugees",
+    "displaced people",
+    "fleeing population",
+    "dispersed population",
+    "relocated population",
+    "asylum seeker",
+    "diaspora",
+    "expatriate",
+    "expat",
+    "émigrant",
+    "réfugié",
+    "réfugiés de guerre",
+    "personnes déplacées",
+    "population fuyante",
+    "population dispersée",
+    "personne relocalisée",
+    "demandeur d'asile",
+    "étranger",
+    "expatrié"
+  )
+
   // opgelet bij resumen met een search id moet de query ook exact overeenkomen met de vorige query
   def determineConditions(resumeData: VideoResumeData): Json = resumeData match {
     case VideoResumeData(Some(videoProgress), _) if videoProgress.lastId.isEmpty =>
@@ -180,6 +229,11 @@ object TiktokDownloader extends IOApp {
                        "operation": "IN",
                        "field_name": "region_code",
                        "field_values": ${regionCodes}
+                     },
+                     {
+                       "operation": "IN",
+                       "field_name": "keyword",
+                       "field_values": ${keywords}
                      }
                    ]
           }"""
@@ -197,6 +251,11 @@ object TiktokDownloader extends IOApp {
                        "operation": "IN",
                        "field_name": "region_code",
                        "field_values": ${regionCodes}
+                     },
+                     {
+                       "operation": "IN",
+                       "field_name": "keyword",
+                       "field_values": ${keywords}
                      }
                    ]
           }"""
@@ -275,7 +334,7 @@ object TiktokDownloader extends IOApp {
             Method.POST,
             Uri
               .unsafeFromString("https://open.tiktokapis.com/v2/research/video/query/")
-              .withQueryParam("fields", "id,video_description,create_time,comment_count,voice_to_text")
+              .withQueryParam("fields", "id,video_description,username,create_time,comment_count,voice_to_text")
           ).withEntity(body)
             .withHeaders(Headers(Accept(MediaType.application.json), Authorization(Credentials.Token(AuthScheme.Bearer, token))))
         )
@@ -384,6 +443,7 @@ object TiktokDownloader extends IOApp {
     sql"""create table if not exists videos(
          id integer primary key,
          video_description text,
+         user_name text,
          create_time text,
          comment_count integer,
          voice_to_text text)""".update.run >>
@@ -432,8 +492,8 @@ object TiktokDownloader extends IOApp {
     sql"update video_comment_progress set downloaded = true where video_date = $videoDate".update.run
 
   def insertVideo(video: Video): ConnectionIO[Int] =
-    sql"""insert or ignore into videos(id, video_description, create_time, comment_count, voice_to_text)
-         values(${video.id}, ${video.video_description}, ${Instant
+    sql"""insert or ignore into videos(id, video_description, user_name, create_time, comment_count, voice_to_text)
+         values(${video.id}, ${video.video_description}, ${video.username}, ${Instant
       .ofEpochSecond(video.create_time)
       .toString}, ${video.comment_count.getOrElse(0L)}, ${video.voice_to_text})""".update.run
 
