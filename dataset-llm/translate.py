@@ -108,6 +108,7 @@ def translate_nl(target_db: str, limit: int, offset: int = 0):
     with sqlite3.connect(target_db) as conn:
         count = conn.execute("select count(*) from hits h left outer join hits_translation t on h.url = t.url where t.url is null and h.languages = 'nld' and h.relevant is null").fetchone()[0]
         print(f"found {count} urls to translate, limit {limit} offset {offset}")
+        count = min(count, limit)
         tokenizer_nl, model_nl = get_translation_model("nl")
         i = 1
         for r in conn.execute(f"select h.url, h.content from hits h left outer join hits_translation t on h.url = t.url where t.url is null and h.languages = 'nld' and h.relevant is null limit {limit} offset {offset}"):
@@ -126,6 +127,7 @@ def translate_fr(target_db: str, limit: int, offset: int = 0):
     with sqlite3.connect(target_db) as conn:
         count = conn.execute("select count(*) from hits h left outer join hits_translation t on h.url = t.url where t.url is null and h.languages = 'fra' and h.relevant is null").fetchone()[0]
         print(f"found {count} urls to translate, limit {limit} offset {offset}")
+        count = min(count, limit)
         tokenizer_nl, model_nl = get_translation_model("fr")
         i = 1
         for r in conn.execute(f"select h.url, h.content from hits h left outer join hits_translation t on h.url = t.url where t.url is null and h.languages = 'fra' and h.relevant is null limit {limit} offset {offset}"):
