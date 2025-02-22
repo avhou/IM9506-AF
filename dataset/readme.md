@@ -53,6 +53,23 @@ See separate project `dataset-downloader`.  The downloader program repeatedly tr
 applies additional filtering to the fully downloaded sqlite DB and outputs a new sqlite DB.
 here, word boundaries and keyword matching is done.
 
+### remove hits that are definitely not relevant
+
+see dataset-llm
+
+run the filtering.py script on the filter hits database.   this will mark irrelevant hits as such and will create a table to store the translations of french and dutch hits.
+
+### translate hits to english
+
+see dataset-llm
+
+run the translate.py script on the database created in the previous step.  this will translate all hits to english and store them in the database.
+
+### summarize the english hits in keywords
+
+see dataset-llm
+
+run the chkbert.py script on the database created in the previous step.  this will summarize all english articles to 5 keywords and store them in the database.
 
 ## Reddit
 
