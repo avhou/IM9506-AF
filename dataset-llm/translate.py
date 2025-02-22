@@ -1,10 +1,11 @@
 import torch
 from transformers import MarianTokenizer, MarianMTModel
 import re
+import sys
+import sqlite3
 
 # Detect and use MPS if available
 device = "mps" if torch.backends.mps.is_available() else "cpu"
-device = "cpu"
 print(f"Using device: {device}")
 
 # Choose the appropriate model based on input language
@@ -76,8 +77,7 @@ def chunk_text_by_tokens(text, tokenizer, max_tokens=512):
     return chunks
 
 # Translate text chunk by chunk
-def translate_text(text, source_lang):
-    tokenizer, model = get_translation_model(source_lang)
+def translate_text(text, tokenizer: MarianTokenizer, model: MarianMTModel) -> str:
     text_chunks = chunk_text(text)
     # text_chunks = chunk_text_by_tokens(text, tokenizer)
 
@@ -93,10 +93,63 @@ def translate_text(text, source_lang):
 
     return " ".join(translated_chunks)
 
-with open("input_text.txt", "r") as f:
-    input_text = f.read()
+# with open("input_text.txt", "r") as f:
+#     input_text = f.read()
+#
+# translated_text = translate_text(input_text, source_lang="nl")
+# print("Translated Text:", translated_text)
+# with open("translated_text.txt", "w") as f:
+#     f.write(translated_text)
+#
 
-translated_text = translate_text(input_text, source_lang="nl")
-print("Translated Text:", translated_text)
-with open("translated_text.txt", "w") as f:
-    f.write(translated_text)
+def translate_nl(target_db: str):
+    print(f"NL translations for {target_db}")
+    MAX_WORDS = 1500
+    with sqlite3.connect(target_db) as conn:
+        count = conn.execute("select count(*) from hits h left outer join hits_translation t on h.url = t.url where t.url is null and h.languages = 'nld' and h.relevant is null").fetchone()[0]
+        print(f"found {count} urls to translate")
+        tokenizer_nl, model_nl = get_translation_model("nl")
+        i = 1
+        for r in conn.execute("select h.url, h.content from hits h left outer join hits_translation t on h.url = t.url where t.url is null and h.languages = 'nld' and h.relevant is null"):
+            words = r[1].split(" ")
+            nr_of_words_to_use = min(MAX_WORDS, len(words))
+            print(f"translating {i}/{count}, word count {len(words)}, will use {nr_of_words_to_use}:  {r[0]}")
+            translation = translate_text(" ".join(words[:nr_of_words_to_use]), tokenizer_nl, model_nl)
+            conn.execute("insert into hits_translation (url, translated_text) values (?, ?)", (r[0], translation))
+            conn.commit()
+            print(f"translation {i}/{count} done, {nr_of_words_to_use} words in Dutch translated to {len(translation.split(' '))} words in English")
+            i = i + 1
+
+def translate_fr(target_db: str):
+    print(f"FR translations for {target_db}")
+    MAX_WORDS = 1500
+    with sqlite3.connect(target_db) as conn:
+        count = conn.execute("select count(*) from hits h left outer join hits_translation t on h.url = t.url where t.url is null and h.languages = 'fra' and h.relevant is null").fetchone()[0]
+        print(f"found {count} urls to translate")
+        tokenizer_nl, model_nl = get_translation_model("fr")
+        i = 1
+        for r in conn.execute("select h.url, h.content from hits h left outer join hits_translation t on h.url = t.url where t.url is null and h.languages = 'fra' and h.relevant is null"):
+            words = r[1].split(" ")
+            nr_of_words_to_use = min(MAX_WORDS, len(words))
+            print(f"translating {i}/{count}, word count {len(words)}, will use {nr_of_words_to_use}:  {r[0]}")
+            translation = translate_text(" ".join(words[:nr_of_words_to_use]), tokenizer_nl, model_nl)
+            conn.execute("insert into hits_translation (url, translated_text) values (?, ?)", (r[0], translation))
+            conn.commit()
+            print(f"translation {i}/{count} done, {nr_of_words_to_use} words in French translated to {len(translation.split(' '))} words in English")
+            i = i + 1
+
+
+def translate(target_db: str, lang: str):
+    print(f"translating {target_db} for lang {lang}")
+    if lang == "nl":
+        translate_nl(target_db)
+    elif lang == "fr":
+        translate_fr(target_db)
+    else:
+        raise ValueError("Unsupported language. Use 'fr' for French or 'nl' for Dutch.")
+
+
+if __name__ == "__main__":
+    if len(sys.argv) <= 1:
+        raise RuntimeError("usage : translate.py target-db")
+    translate(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else "nl")

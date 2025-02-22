@@ -10,6 +10,7 @@ confection==0.1.5
 curated-tokenizers==0.0.9
 curated-transformers==0.1.1
 cymem==2.0.11
+duckdb==1.2.0
 en_core_web_trf @ https://github.com/explosion/spacy-models/releases/download/en_core_web_trf-3.8.0/en_core_web_trf-3.8.0-py3-none-any.whl#sha256=272a31e9d8530d1e075351d30a462d7e80e31da23574f1b274e200f3fff35bf5
 filelock==3.17.0
 fsspec==2025.2.0
