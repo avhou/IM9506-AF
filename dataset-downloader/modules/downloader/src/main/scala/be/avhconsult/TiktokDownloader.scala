@@ -67,6 +67,7 @@ object TiktokDownloader extends IOApp {
       username: String,
       // UTC Unix epoch (in seconds) of when the TikTok video was posted. (Inherited field from TNS research API)
       create_time: Long,
+      video_duration: Option[Long],
       comment_count: Option[Long],
       voice_to_text: Option[String]
   )
@@ -445,6 +446,7 @@ object TiktokDownloader extends IOApp {
          video_description text,
          user_name text,
          create_time text,
+         video_duration integer,
          comment_count integer,
          voice_to_text text)""".update.run >>
       sql"create index if not exists ix_id on videos(id)".update.run
@@ -492,10 +494,10 @@ object TiktokDownloader extends IOApp {
     sql"update video_comment_progress set downloaded = true where video_date = $videoDate".update.run
 
   def insertVideo(video: Video): ConnectionIO[Int] =
-    sql"""insert or ignore into videos(id, video_description, user_name, create_time, comment_count, voice_to_text)
+    sql"""insert or ignore into videos(id, video_description, user_name, create_time, video_duration, comment_count, voice_to_text)
          values(${video.id}, ${video.video_description}, ${video.username}, ${Instant
       .ofEpochSecond(video.create_time)
-      .toString}, ${video.comment_count.getOrElse(0L)}, ${video.voice_to_text})""".update.run
+      .toString}, ${video.video_duration.getOrElse(0L)}, ${video.comment_count.getOrElse(0L)}, ${video.voice_to_text})""".update.run
 
   def insertVideoComment(videoComment: VideoComment): ConnectionIO[Int] =
     sql"""insert or ignore into video_comment(id, video_id, comment_text, parent_comment_id, create_time)
