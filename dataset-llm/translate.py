@@ -102,15 +102,15 @@ def translate_text(text, tokenizer: MarianTokenizer, model: MarianMTModel) -> st
 #     f.write(translated_text)
 #
 
-def translate_nl(target_db: str):
+def translate_nl(target_db: str, limit: int, offset: int = 0):
     print(f"NL translations for {target_db}")
     MAX_WORDS = 1500
     with sqlite3.connect(target_db) as conn:
         count = conn.execute("select count(*) from hits h left outer join hits_translation t on h.url = t.url where t.url is null and h.languages = 'nld' and h.relevant is null").fetchone()[0]
-        print(f"found {count} urls to translate")
+        print(f"found {count} urls to translate, limit {limit} offset {offset}")
         tokenizer_nl, model_nl = get_translation_model("nl")
         i = 1
-        for r in conn.execute("select h.url, h.content from hits h left outer join hits_translation t on h.url = t.url where t.url is null and h.languages = 'nld' and h.relevant is null"):
+        for r in conn.execute(f"select h.url, h.content from hits h left outer join hits_translation t on h.url = t.url where t.url is null and h.languages = 'nld' and h.relevant is null limit {limit} offset {offset}"):
             words = r[1].split(" ")
             nr_of_words_to_use = min(MAX_WORDS, len(words))
             print(f"translating {i}/{count}, word count {len(words)}, will use {nr_of_words_to_use}:  {r[0]}")
@@ -120,15 +120,15 @@ def translate_nl(target_db: str):
             print(f"translation {i}/{count} done, {nr_of_words_to_use} words in Dutch translated to {len(translation.split(' '))} words in English")
             i = i + 1
 
-def translate_fr(target_db: str):
+def translate_fr(target_db: str, limit: int, offset: int = 0):
     print(f"FR translations for {target_db}")
     MAX_WORDS = 1500
     with sqlite3.connect(target_db) as conn:
         count = conn.execute("select count(*) from hits h left outer join hits_translation t on h.url = t.url where t.url is null and h.languages = 'fra' and h.relevant is null").fetchone()[0]
-        print(f"found {count} urls to translate")
+        print(f"found {count} urls to translate, limit {limit} offset {offset}")
         tokenizer_nl, model_nl = get_translation_model("fr")
         i = 1
-        for r in conn.execute("select h.url, h.content from hits h left outer join hits_translation t on h.url = t.url where t.url is null and h.languages = 'fra' and h.relevant is null"):
+        for r in conn.execute(f"select h.url, h.content from hits h left outer join hits_translation t on h.url = t.url where t.url is null and h.languages = 'fra' and h.relevant is null limit {limit} offset {offset}"):
             words = r[1].split(" ")
             nr_of_words_to_use = min(MAX_WORDS, len(words))
             print(f"translating {i}/{count}, word count {len(words)}, will use {nr_of_words_to_use}:  {r[0]}")
@@ -139,17 +139,17 @@ def translate_fr(target_db: str):
             i = i + 1
 
 
-def translate(target_db: str, lang: str):
-    print(f"translating {target_db} for lang {lang}")
+def translate(target_db: str, lang: str, limit: int = 20000000, offset: int = 0):
+    print(f"translating {target_db} for lang {lang}, limit {limit}, offset {offset}")
     if lang == "nl":
-        translate_nl(target_db)
+        translate_nl(target_db, limit, offset)
     elif lang == "fr":
-        translate_fr(target_db)
+        translate_fr(target_db, limit, offset)
     else:
         raise ValueError("Unsupported language. Use 'fr' for French or 'nl' for Dutch.")
 
 
 if __name__ == "__main__":
     if len(sys.argv) <= 1:
-        raise RuntimeError("usage : translate.py target-db")
-    translate(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else "nl")
+        raise RuntimeError("usage : translate.py target-db [nl|fr] [limit] [offset]")
+    translate(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else "nl", int(sys.argv[3]) if len(sys.argv) > 3 else 20000000, int(sys.argv[4]) if len(sys.argv) > 4 else 0)
