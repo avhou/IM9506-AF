@@ -39,7 +39,7 @@ def extract(target_db: str, limit: int = 20000000, offset: int = 0, table_name: 
         keyphrase_vectorizer: KeyphraseCountVectorizer = KeyphraseCountVectorizer(spacy_pipeline="en_core_web_trf")
         chunkey_bert: ChunkeyBert = ChunkeyBert(keybert=keybert)
 
-        unwanted_keywords = {"dutchnews", "dutch news", "n - va", "n-va"}
+        unwanted_keywords = {"dutchnews", "dutch news", "dutchnews.nl", "n - va", "n-va"}
         max_number_of_keywords = 5
         i = 1
         for r in conn.execute(f"select t.url, t.translated_text from hits_translation t left outer join {table_name} k on t.url = k.url where k.url is null limit {limit} offset {offset}"):
