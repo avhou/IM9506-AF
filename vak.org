@@ -1,5 +1,5 @@
 * Meetings
-** <2025-02-07 Fri> overleg VAF
+** <2025-02-07 Fri> overleg AF
 - word boundaries te bespreken
 - common crawl : filter op periode is voor de crawling tijdens deze periode.  de informatie die hiermee wordt gevonden kan al veel ouder zijn.   enerzijds is dat een probleem.  anderszijds willen we ons ook niet beperken tot enkel nieuwe informatie tijdens deze periode gepubliceerd.  enkele nieuwe info is allicht relevanter voor social media.
 - evaluatie criteratie relevant
@@ -28,6 +28,144 @@ perhaps limit to one specific source of migrants.
 rumour detection 1 class classification te bekijken?
 
 
+** <2025-02-28 Fri> overleg AF
+
+points to discuss :
+
+- tiktok status update and further steps. See excel sheet for a (subset of the) list of videos filtered on the keywords we determined.  Volume increases in time. Descriptions are often incoherent, voice2text almost always empty.  Quality?  Keywords revision necessary?
+=> additional keywords 2 step strategy : candidate set en dan bijkomende filtering.  ukrain / russia.
+=> whisper to transcribe 
+=> between 30s and 2m, or 1m maximum
+=> comments pas nadien na de filtering.
+=> idem voor reddit.
+Ukraine, Russia, Syria, Israel, Palestine
+ 
+or Ukraine and Russia
+ 
+- euroHPC status update.  I have a time budget of 800 node hours.   one node = 4 A100 GPUs.  This budget is allocated pro rata per month, no transfer possible.  Took some time to get this going + to find some way to actually keep 4 GPUs busy.
+=> in begin process on one GPU.
+=> huggingface.
+- dataset update :
+  - did extensive work to further limit the candidates.  57.858 remain.  37.769 filtered as irrelevant (total_nr_hits < 3 OR link_percentage >= 70%).   leaves 20.089 candidates.
+  - examined FAISS vector store.   difficulty : we still need to know how to query the remaining candidates. also : English bias.
+  -https://github.com/wietsedv/bertje 
+  https://huggingface.co/papluca/xlm-roberta-base-language-detection
+papluca/xlm-roberta-base-language-detection · Hugging Face
+We’re on a journey to advance and democratize artificial intelligence through open source and open science.
+ 
+  - looked into keyword / topic extraction: chunkeyBert.  summarize in 5 keywords, my hope is to be able to easily spot relevant / irrelevant.  We can still use FAISS approach for estimate of disinformation.  difficulty : heavy bias towards english
+  - => automatic translation from Dutch/French to English using Helsinki-NLP/opus-mt-*-en.  major rabbithole!  batch_size, sampling/no-sampling, hyperparameters of huggingface transformers, parallellism, ...
+
+limit to 4000 tokens maximum
+
+scope :
+- tiktok : extract from whisper
+- setup questions FAISS 512 words 2 - 3 questions
+- first version of the database
+- important to sample!.
+- dan pas experiments
+
+summary of our meeting of today 2025-02-28 :
+
+tiktok and reddit.
+ 
+- I have found an initial list of videos / reddit posts containing at least one hit for our initial list of keywords.  due to the number of hits, I will use a 2 step strategy to reduce that initial list even more.   This will be done by :
+  - using additional keywords.  Candidate additional keywords lists are : 1. ukraine, russia or 2. ukraine, russia, syria, israel, palestine.
+  - limiting tiktok videos to videos between 30s and 1-2 minutes.
+- comments will only be downloaded and taken into account for the second stage video candidates
+- text transcription can be done using whisper model on the second stage video candidates.
+
+
+internet articles (news outlets and political parties)
+
+- about 20.000 articles remain after extensive filtering (initial keywords) and delta calculations (only new URLs during timeframe taken into account)
+- I have English translations + 5 keywords summary done by cunkeyBert for those 20.000 articles
+- for each article, 2 judgements must be made: 1) is the article relevant for the research and 2) does it contain disinformation
+- judging the relevance of the articles will be done by using the same 2 step approach as for tiktok,  meaning I will look for those keywords in the chunkeyBert keywords / summaries.  We will limit our articles to max 4000 words.  This will yield a second stage list of articles.
+- judging whether an article from the second stage list of articles contains disinformation or not will be done by doing a semantic embedding of each article.  These embeddings will be stored in a vector store.  The vector store will be queried to retrieve documents that are highly likely to contain disinformation.   I will propose a list of possible queries for this.
+
+
+scope for next meeting : 
+- setup the questions to be used to interrogate the vector store.
+- finalize as much as possible the news article database, 2 judgements done for all 20.000 articles.
+- experiment with whisper for some videos 
+
+
+potential questions :
+
+Do immigrants pose a financial burden on the welfare system?
+Targets economic disinformation narratives.
+
+Are immigrants taking jobs from native-born citizens?
+Addresses labor market-related misinformation.
+
+Do immigrants increase crime rates in host countries?
+Focuses on security-related disinformation.
+
+Are immigrants linked to the spread of diseases?
+Examines public health-related misinformation.
+
+Do immigrants refuse to integrate into society?
+Targets cultural assimilation myths.
+
+Are immigration policies leading to the replacement of native populations?
+Checks for "Great Replacement" conspiracy rhetoric.
+
+Is mass immigration a deliberate strategy to weaken national identity?
+Investigates nationalist and far-right narratives.
+
+Are immigrants receiving preferential treatment over citizens?
+Looks at fairness-based misinformation.
+
+Do open borders lead to uncontrolled waves of criminals and terrorists?
+Explores fear-driven disinformation.
+
+Is immigration an existential threat to Western civilization?
+Targets apocalyptic-style disinformation claims.
+
+
+1. **Do immigrants drain public resources?**  
+   *Targets economic disinformation.*  
+
+2. **Are immigrants taking jobs from citizens?**  
+   *Addresses labor market myths.*  
+
+3. **Do immigrants increase crime rates?**  
+   *Focuses on security narratives.*  
+
+4. **Are immigrants linked to spreading diseases?**  
+   *Covers public health fears.*  
+
+5. **Do immigrants refuse to integrate into local culture?**  
+   *Highlights cultural assimilation myths.*  
+
+6. **Is mass immigration a deliberate plot to replace native populations?**  
+   *Examines "Great Replacement" rhetoric.*  
+
+7. **Does immigration undermine national identity?**  
+   *Targets identity-based disinformation.*  
+
+8. **Are immigrants given unfair preferential treatment over citizens?**  
+   *Focuses on perceived inequity claims.*  
+
+9. **Do open borders attract criminals and terrorists?**  
+   *Explores security and border control fears.*  
+
+10. **Is immigration an existential threat to our society?**  
+   *Captures apocalyptic disinformation narratives.*
+
+
+most commonly used disinformation discourses.
+- **Economic Drain:** Immigrants are falsely portrayed as overburdening public resources.  
+- **Job Theft:** Claims suggest immigrants take jobs from native citizens.  
+- **Crime Increase:** Immigrants are often linked to higher crime rates without evidence.  
+- **Disease Spread:** Narratives falsely associate immigrants with epidemics.  
+- **Cultural Non-Integration:** Immigrants are depicted as unwilling to assimilate.  
+- **Great Replacement:** Conspiracy claims argue immigrants are replacing native populations.  
+- **National Identity Threat:** Immigrants are said to undermine traditional cultural values.  
+- **Preferential Treatment:** False beliefs claim immigrants receive undue benefits.  
+- **Security Risk:** Immigrants are accused of introducing terrorism or criminal elements.  
+- **Existential Threat:** Immigration is portrayed as a danger to the very fabric of society.
 * links
 
 [[https://emschwartz.me/understanding-the-bm25-full-text-search-algorithm/][BM25 search algorithm]]
@@ -86,6 +224,36 @@ https://docs.lxp.lu/howto/HFInference/
 [[https://developers.tiktok.com/doc/client-access-token-management][generate an access token]]
 [[https://developers.tiktok.com/doc/research-api-specs-query-videos?enter_method=left_navigation][API reference - query videos]]
 [[https://developers.tiktok.com/doc/research-api-specs-query-video-comments?enter_method=left_navigation][API reference - query video comments]]
+
+common crawl parquet
+
+https://data.commoncrawl.org/cc-index/table/cc-main/index.html
+https://commoncrawl.org/blog/index-to-warc-files-and-urls-in-columnar-format
+
+keyword extraction : 
+
+https://huggingface.co/Voicelab/vlt5-base-keywords
+https://huggingface.co/google/mt5-large
+
+automatic speech recognition :
+
+https://huggingface.co/openai/whisper-large-v3-turbo
+
+65 minuten:  
+batch size = 1
+            translated_ids = model.generate(
+                **inputs,
+                max_length=max_output_length,
+                do_sample=False,
+                num_beams=3,
+                no_repeat_ngram_size=3,
+                early_stopping=True,
+                repetition_penalty=2.0,
+                length_penalty=1.1,
+                pad_token_id=tokenizer.pad_token_id
+            )
+geen herhalingen. betrekkelijk goede kwaliteit
+
 
 * datasets
 
