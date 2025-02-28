@@ -335,7 +335,7 @@ object TiktokDownloader extends IOApp {
             Method.POST,
             Uri
               .unsafeFromString("https://open.tiktokapis.com/v2/research/video/query/")
-              .withQueryParam("fields", "id,video_description,username,create_time,comment_count,voice_to_text")
+              .withQueryParam("fields", "id,video_description,username,create_time,video_duration,comment_count,voice_to_text")
           ).withEntity(body)
             .withHeaders(Headers(Accept(MediaType.application.json), Authorization(Credentials.Token(AuthScheme.Bearer, token))))
         )

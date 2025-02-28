@@ -4,6 +4,15 @@ import re
 import sys
 import sqlite3
 
+# duckdb :
+# bash -c "cat *translated.csv > all-translations.csv"
+# visidata --header 0 all-translations.csv
+# dan column hiden en opnieuw opslaan als translations.csv
+# create table hits_translation as select * from 'translations.csv';
+# insert into hits_translation(url, translated_text) select url, content from hits where host = 'dutchnews.nl' and relevant is null;
+
+# select count(distinct url) from hits_keywords_llama where keywords like '%ukrai%' or keywords like '%refugee%' or keywords like '%migrant%' or keywords like '%russia%' or keywords like '%diaspora%' or keywords like '%racism%' or keywords like '%identity%';
+
 # Detect and use MPS if available
 device = "mps" if torch.backends.mps.is_available() else "cpu"
 print(f"Using device: {device}")

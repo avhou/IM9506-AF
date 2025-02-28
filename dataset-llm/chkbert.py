@@ -47,7 +47,7 @@ def extract(target_db: str, limit: int = 20000000, offset: int = 0, table_name: 
             print(f"summarizing {i}/{count}, word count {len(words)}:  {r[0]}")
             try:
                 result = chunkey_bert.extract_keywords(
-                    docs=r[1], num_keywords=10, chunker=chunker_llama_index, vectorizer=keyphrase_vectorizer, nr_candidates=10, top_n=3
+                    docs=r[1], num_keywords=10, chunker=chunker_leestekens, vectorizer=keyphrase_vectorizer, nr_candidates=10, top_n=3
                 )
 
                 if (len(result) > 0):
