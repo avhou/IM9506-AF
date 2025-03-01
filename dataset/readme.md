@@ -91,3 +91,15 @@ see TiktokDownloader.  this will find videos matching keywords of keyword list 1
 ### 2nd stage tiktok
 
 see script 2nd_stage_tiktok.py.  this will do additional filtering of the videos found by TiktokDownloader, and download the actual videos. 
+
+### transcription of tiktok videos
+
+the downloaded videos need to be transcrided.   you can do this using the `whisper_transcribe.py` script.  this will transcribe all videos in a folder and store the transcriptions in a sqlite database.
+
+### translation of the transcriptions
+
+after the videos have been transcribed, they should be translated to English.  run the `translations_tiktok.py` script.
+
+### exporting to xlsx
+
+run `finalize_tiktok.py` to export the correct tables to xlsx files.

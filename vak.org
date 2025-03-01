@@ -91,6 +91,41 @@ scope for next meeting :
 - experiment with whisper for some videos 
 
 
+Dear Clara and Stefano,
+
+I have been looking at some of the most commonly used disinformation discourses.  I have found the following broad categories :
+
+
+- economic disinformation narratives
+- labor market-related narratives
+- security-related narratives
+- public health-related narratives
+- cultural assimilation narratives
+- "Great Replacement" or other conspiracy narratives
+- nationalist and far-right narratives
+- fairness-based narratives
+- fear-driven narratives
+- apocalyptic narratives
+
+Therefore, to detect each kind of narrative, I would propose the following questions (to be used to semantically query a vector store) :
+
+- economic: Do immigrants pose a financial burden on the welfare system?  Do immigrants drain public resources?
+- labor market: Are immigrants taking jobs from citizens?
+- security: Do immigrants increase crime rates?
+- public health: Are immigrants linked to spreading diseases?
+- cultural assimilation: Do immigrants refuse to integrate into society?  Do immigrants refuse to integrate into local culture?
+- "Great Replacement" or other conspiracy: Are immigration policies leading to the replacement of native populations?  Is mass immigration a deliberate plot to replace native populations?
+- nationalist and far-right: Is mass immigration a deliberate strategy to weaken national identity?  Does immigration undermine national identity?
+- fairness: Are immigrants receiving preferential treatment over citizens?  Are immigrants given unfair preferential treatment?
+- fear: Do open borders lead to uncontrolled waves of criminals and terrorists?  Do open borders attract criminals and terrorists?
+- apocalyptic: Is immigration an existential threat to Western society?
+
+  
+
+
+3. **Is immigration an existential threat to our society?**  
+
+
 potential questions :
 
 Do immigrants pose a financial burden on the welfare system?
