@@ -4,6 +4,8 @@ import ffmpeg
 import os
 import sys
 import sqlite3
+from itertools import islice
+
 
 def extract_audio(input_file, output_file="temp_audio.wav"):
     try:
@@ -33,7 +35,7 @@ def transcribe_videos(folder: str, target_db: str):
     print(f"using table_name {table_name}")
 
     with sqlite3.connect(target_db) as conn:
-        for row in conn.execute(f"""select id from {table_name} where transcription is null;"""):
+        for row in islice(conn.execute(f"""select id from {table_name} where transcription is null;"""), 10):
             video_id = row[0]
             if os.path.exists(os.path.join(folder, f"{video_id}.mp4")):
                 print(f"Extracting audio from video {video_id}.mp4 to temp_audio_{video_id}.wav...")
