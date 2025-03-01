@@ -20,7 +20,7 @@ def prepare_filtering(target_db: str):
     sqlite_conn.execute(f"""delete from hits where host = 'ongekend';""")
     sqlite_conn.commit()
     print(f"copieren van dutchnews.nl hits naar hits_translation")
-    sqlite_conn.execute(f"""insert into hits_translation(url, translated_text) select url, content from hits where host = 'dutchnews.nl' and relevant is null;""")
+    sqlite_conn.execute(f"""insert into hits_translation(url, translated_text) select url, content from hits where host = 'dutchnews.nl' and relevant is null and not exists (select 1 from hits_translation tt where tt.url = url);""")
     sqlite_conn.commit()
 
     nl_hosts = [

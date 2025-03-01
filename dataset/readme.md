@@ -80,3 +80,14 @@ there is a python script `reddit_scraper.py` that is hardcoded with reddits and 
 ### processing the reddits
 
 see scripts `reddit-concat.sh`.
+
+
+## tiktok
+
+### finding the tiktok videos
+
+see TiktokDownloader.  this will find videos matching keywords of keyword list 1.
+
+### 2nd stage tiktok
+
+see script 2nd_stage_tiktok.py.  this will do additional filtering of the videos found by TiktokDownloader, and download the actual videos. 
