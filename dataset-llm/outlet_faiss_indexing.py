@@ -9,16 +9,16 @@ MAX_WORDS = 250
 OVERLAP = 25
 splitter = SentenceSplitter(chunk_size=MAX_WORDS, chunk_overlap=OVERLAP)
 
-DIMENSIONS = 384
-# DIMENSIONS = 768
+# DIMENSIONS = 384
+DIMENSIONS = 768
 
 
 def generate_index(outlet_db: str):
     print(f"generating faiss index for input file {outlet_db}")
 
     # Load embedding model
-    model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
-    # model = SentenceTransformer("nomic-ai/nomic-embed-text-v2-moe", trust_remote_code=True)
+    # model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+    model = SentenceTransformer("nomic-ai/nomic-embed-text-v2-moe", trust_remote_code=True, device="cpu")
     print(f"embedding model loaded")
 
     index_file = f"faiss_index_{outlet_db[:-len('.sqlite')]}.bin"
@@ -32,7 +32,7 @@ def generate_index(outlet_db: str):
 
     with sqlite3.connect(outlet_db) as conn:
         conn.execute("create index if not exists idx_hits_number on outlet_hits(number);")
-        result = conn.execute("select number, translated_text from outlet_hits order by number asc;").fetchall()
+        result = conn.execute("select number, translated_text from outlet_hits order by number asc limit 10;").fetchall()
         rowids = [r[0] for r in result]
         documents = [r[1] for r in result]
         del result
