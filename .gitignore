@@ -3,3 +3,4 @@ dataset/request_log.log
 **/.idea
 **/venv
 videos*
+dataset-llm/__pycache__

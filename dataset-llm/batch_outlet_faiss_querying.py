@@ -1,11 +1,5 @@
 import json
 
-import faiss
-from sentence_transformers import SentenceTransformer
-import sys
-import sqlite3
-from llama_index.core.node_parser import SentenceSplitter
-import numpy as np
 from outlet_faiss_querying import *
 
 

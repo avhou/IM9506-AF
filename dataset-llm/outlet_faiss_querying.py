@@ -1,9 +1,9 @@
 import faiss
 from sentence_transformers import SentenceTransformer
 import sys
-import sqlite3
 from llama_index.core.node_parser import SentenceSplitter
 import numpy as np
+from faiss_utils import normalize
 
 MAX_WORDS = 250
 OVERLAP = 25
@@ -39,6 +39,7 @@ def query_index(index_file: str, metadata_file: str, query: str, nr_of_hits: int
 
 def query_index_with_model(model: SentenceTransformer, index, chunk_metadata, query: str, nr_of_hits: int = 5):
     query_embedding = model.encode([query], convert_to_numpy=True)
+    query_embedding = normalize(query_embedding)
     D, I = index.search(query_embedding, k=nr_of_hits)
 
     retrieved_doc_ids = [chunk_metadata.get(int(chunk_id), None) for chunk_id in I[0]]

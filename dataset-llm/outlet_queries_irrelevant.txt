@@ -1,0 +1,3 @@
+Which documents describe a plethora of topics, not necessarily all related to immigration or war refugees?
+Which documents contain a lot of dates and times, and seem to discuss many topics?
+Which documents have a high link_percentage, and seem to discuss many topics?
