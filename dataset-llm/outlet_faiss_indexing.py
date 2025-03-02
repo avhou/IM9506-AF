@@ -32,7 +32,7 @@ def generate_index(outlet_db: str, column_name: str = "translated_text"):
 
     with sqlite3.connect(outlet_db) as conn:
         conn.execute("create index if not exists idx_hits_number on outlet_hits(number);")
-        result = conn.execute(f"select number, {column_name}, link_percentage from outlet_hits order by number asc limit 100;").fetchall()
+        result = conn.execute(f"select number, {column_name}, link_percentage from outlet_hits order by number asc;").fetchall()
         rowids = [r[0] for r in result]
         documents = [r[1] for r in result]
         link_percentages = [r[2] for r in result]
