@@ -32,7 +32,7 @@ def generate_index(outlet_db: str):
 
     with sqlite3.connect(outlet_db) as conn:
         conn.execute("create index if not exists idx_hits_number on outlet_hits(number);")
-        result = conn.execute("select number, translated_text from outlet_hits order by number asc limit 10;").fetchall()
+        result = conn.execute("select number, translated_text from outlet_hits order by number asc;").fetchall()
         rowids = [r[0] for r in result]
         documents = [r[1] for r in result]
         del result
