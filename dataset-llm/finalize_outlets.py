@@ -26,6 +26,7 @@ def generate_query(pattern: str, keep_first: int = 4000) -> str:
                    h.url, 
                    h.host, 
                    h.timestamp, 
+                   h.political_party,
                    (round(h.link_percentage, 2) * 100)::integer as link_percentage, 
                    h.total_nr_hits, 
                    h.distinct_nr_hits, 
