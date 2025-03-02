@@ -10,7 +10,8 @@ from outlet_faiss_querying import *
 
 
 def query_index(index_file: str, metadata_file: str, questions_file: str, output_file:str, nr_of_hits: int = 5):
-    model = load_model("sentence-transformers/all-MiniLM-L6-v2")
+    # model = load_model("sentence-transformers/all-MiniLM-L6-v2")
+    model = load_model("nomic-ai/nomic-embed-text-v2-moe", trust_remote_code=True, device="cpu")
     index, chunk_metadata = read_index_and_metadata(index_file, metadata_file)
 
     responses = []

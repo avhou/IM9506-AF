@@ -13,10 +13,9 @@ DIMENSIONS = 384
 # DIMENSIONS = 768
 
 
-def load_model(model_name: str):
+def load_model(model_name: str, **kwargs):
     # Load embedding model
-    model = SentenceTransformer(model_name)
-    # model = SentenceTransformer("nomic-ai/nomic-embed-text-v2-moe", trust_remote_code=True)
+    model = SentenceTransformer(model_name, **kwargs)
     print(f"embedding model loaded")
     return model
 
