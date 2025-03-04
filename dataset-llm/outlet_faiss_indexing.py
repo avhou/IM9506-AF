@@ -2,25 +2,14 @@ import faiss
 from sentence_transformers import SentenceTransformer
 import sys
 import sqlite3
-from llama_index.core.node_parser import SentenceSplitter
 import numpy as np
-from faiss_utils import normalize
+from faiss_utils import normalize, models_and_params, get_splitter, metadata_name, index_name
 
-MAX_WORDS = 250
-OVERLAP = 25
-splitter = SentenceSplitter(chunk_size=MAX_WORDS, chunk_overlap=OVERLAP)
-
-# DIMENSIONS = 384
-DIMENSIONS = 768
 
 def generate_indices(outlet_db: str, column_name: str = "translated_text"):
     print(f"generating faiss indices for input file {outlet_db}")
 
-    for (model_name, dimension, kwargs) in zip(
-        ["sentence-transformers/all-MiniLM-L6-v2", "nomic-ai/nomic-embed-text-v2-moe"],
-        [384, 768],
-        [{}, {"trust_remote_code": True, "device": "cpu"}]
-    ):
+    for (model_name, dimension, kwargs) in models_and_params():
         for column_name in ["translated_text", "content"]:
             generate_index(outlet_db, column_name, model_name, dimension, **kwargs)
 
@@ -28,10 +17,9 @@ def generate_indices(outlet_db: str, column_name: str = "translated_text"):
 def generate_index(outlet_db: str, column_name: str, model_name: str, dimension: int, **kwargs):
     model = SentenceTransformer(model_name, **kwargs)
     print(f"embedding model {model_name} loaded")
+    splitter = get_splitter()
 
-    cleaned_model_name = model_name.replace("/", "_")
-
-    index_file = f"faiss_index_{cleaned_model_name}_{column_name}_{outlet_db[:-len('.sqlite')]}.bin"
+    index_file = index_name(model_name, column_name, outlet_db)
     print(f"using index file {index_file}")
     base_index = faiss.IndexFlatL2(dimension)
     index = faiss.IndexIDMap(base_index)
@@ -41,7 +29,6 @@ def generate_index(outlet_db: str, column_name: str, model_name: str, dimension:
     chunk_metadata = {}
 
     with sqlite3.connect(outlet_db) as conn:
-        conn.execute("create index if not exists idx_hits_number on outlet_hits(number);")
         result = conn.execute(f"select number, {column_name}, link_percentage from outlet_hits order by number asc;").fetchall()
         rowids = [r[0] for r in result]
         documents = [r[1] for r in result]
@@ -71,7 +58,7 @@ def generate_index(outlet_db: str, column_name: str, model_name: str, dimension:
         faiss.write_index(index, index_file)
         print("Index saved to disk.")
 
-        metadata_file = f"faiss_metadata_{cleaned_model_name}_{column_name}_{outlet_db[:-len('.sqlite')]}.npy"
+        metadata_file = metadata_name(model_name, column_name, outlet_db)
         np.save(metadata_file, chunk_metadata)
         print(f"Metadata saved to {metadata_file}")
 

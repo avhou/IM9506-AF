@@ -18,6 +18,7 @@ def finalize_outlets(outlet_db: str, keep_first: int = 4000):
             conn.execute(f""" copy ({generate_query(pattern)}) to '{filename_prefix}.xlsx' with (format xlsx, header true);""")
             conn.execute(f"""detach database if exists output;""")
             conn.execute(f"""ATTACH '{filename_prefix}.sqlite' as output (TYPE sqlite);""")
+            conn.execute(f""" drop table if exists output.outlet_hits;""")
             conn.execute(f""" create table output.outlet_hits as ({generate_query(pattern)});""")
 
 def generate_query(pattern: str, keep_first: int = 4000) -> str:
