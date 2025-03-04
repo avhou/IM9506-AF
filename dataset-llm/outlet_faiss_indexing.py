@@ -13,19 +13,29 @@ splitter = SentenceSplitter(chunk_size=MAX_WORDS, chunk_overlap=OVERLAP)
 # DIMENSIONS = 384
 DIMENSIONS = 768
 
-def generate_index(outlet_db: str, column_name: str = "translated_text"):
-    print(f"generating faiss index for input file {outlet_db}")
+def generate_indices(outlet_db: str, column_name: str = "translated_text"):
+    print(f"generating faiss indices for input file {outlet_db}")
 
-    # Load embedding model
-    # model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
-    model = SentenceTransformer("nomic-ai/nomic-embed-text-v2-moe", trust_remote_code=True, device="cpu")
-    print(f"embedding model loaded")
+    for (model_name, dimension, kwargs) in zip(
+        ["sentence-transformers/all-MiniLM-L6-v2", "nomic-ai/nomic-embed-text-v2-moe"],
+        [384, 768],
+        [{}, {"trust_remote_code": True, "device": "cpu"}]
+    ):
+        for column_name in ["translated_text", "content"]:
+            generate_index(outlet_db, column_name, model_name, dimension, **kwargs)
 
-    index_file = f"faiss_index_{column_name}_{outlet_db[:-len('.sqlite')]}.bin"
+
+def generate_index(outlet_db: str, column_name: str, model_name: str, dimension: int, **kwargs):
+    model = SentenceTransformer(model_name, **kwargs)
+    print(f"embedding model {model_name} loaded")
+
+    cleaned_model_name = model_name.replace("/", "_")
+
+    index_file = f"faiss_index_{cleaned_model_name}_{column_name}_{outlet_db[:-len('.sqlite')]}.bin"
     print(f"using index file {index_file}")
-    base_index = faiss.IndexFlatL2(DIMENSIONS)
+    base_index = faiss.IndexFlatL2(dimension)
     index = faiss.IndexIDMap(base_index)
-    print(f"Empty index created")
+    print(f"Empty index created for model {model_name} and colum {column_name}")
 
     # Dictionary to store metadata: maps chunk IDs to document IDs
     chunk_metadata = {}
@@ -61,12 +71,12 @@ def generate_index(outlet_db: str, column_name: str = "translated_text"):
         faiss.write_index(index, index_file)
         print("Index saved to disk.")
 
-        metadata_file = f"faiss_metadata_{column_name}_{outlet_db[:-len('.sqlite')]}.npy"
+        metadata_file = f"faiss_metadata_{cleaned_model_name}_{column_name}_{outlet_db[:-len('.sqlite')]}.npy"
         np.save(metadata_file, chunk_metadata)
         print(f"Metadata saved to {metadata_file}")
 
 
 if __name__ == "__main__":
     if len(sys.argv) <= 1:
-        raise RuntimeError("usage : faiss_indexing.py <input-file> [column_name]")
-    generate_index(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else "translated_text")
+        raise RuntimeError("usage : faiss_indexing.py <input-file>")
+    generate_indices(sys.argv[1])
