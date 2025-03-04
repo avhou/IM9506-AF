@@ -2,16 +2,9 @@ import faiss
 from sentence_transformers import SentenceTransformer
 import sys
 import sqlite3
-from llama_index.core.node_parser import SentenceSplitter
 import numpy as np
-from faiss_utils import normalize, index_name, metadata_name, models_and_params
+from faiss_utils import normalize, index_name, metadata_name, models_and_params, get_splitter
 
-MAX_WORDS = 250
-OVERLAP = 25
-splitter = SentenceSplitter(chunk_size=MAX_WORDS, chunk_overlap=OVERLAP)
-
-# DIMENSIONS = 384
-DIMENSIONS = 768
 
 def generate_indices(tiktok_db: str, column_name: str = "translated_text"):
     print(f"generating faiss indices for input file {tiktok_db}")
@@ -24,6 +17,7 @@ def generate_indices(tiktok_db: str, column_name: str = "translated_text"):
 def generate_index(tiktok_db: str, column_name: str, model_name: str, dimension: int, **kwargs):
     model = SentenceTransformer(model_name, **kwargs)
     print(f"embedding model {model_name} loaded")
+    splitter = get_splitter()
 
     index_file = index_name(model_name, column_name, tiktok_db)
     print(f"using index file {index_file}")
