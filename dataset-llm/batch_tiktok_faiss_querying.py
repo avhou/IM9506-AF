@@ -1,12 +1,12 @@
 import json
+import sys
 
 from faiss_utils import *
-from outlet_faiss_querying import *
 from typing import List
 import sqlite3
 
 
-KOLOM_NAMEN = ["translated_text", "content"]
+KOLOM_NAMEN = ["translated_text", "transcription"]
 
 def query_folder(faiss_folder: str, db_name: str, nr_of_hits: int = 5):
     with sqlite3.connect(db_name) as conn:
@@ -17,8 +17,8 @@ def query_folder(faiss_folder: str, db_name: str, nr_of_hits: int = 5):
         ):
             print(f"processing query file {file}, marking column {column_name} with value {value}")
             documents_to_mark = query_index(faiss_folder, db_name, file, nr_of_hits)
-            print(f"update outlet_hits set {column_name} = coalesce({column_name}, '') || '{value}' where number in ({','.join(map(str, documents_to_mark))});");
-            conn.execute(f"update outlet_hits set {column_name} = coalesce({column_name}, '') || '{value}' where number in ({','.join(map(str, documents_to_mark))});")
+            print(f"update video_hits set {column_name} = coalesce({column_name}, '') || '{value}' where number in ({','.join(map(str, documents_to_mark))});");
+            conn.execute(f"update video_hits set {column_name} = coalesce({column_name}, '') || '{value}' where number in ({','.join(map(str, documents_to_mark))});")
 
 
 
@@ -79,5 +79,5 @@ def query_index(faiss_folder: str, db_name: str, questions_file: str, nr_of_hits
 
 if __name__ == "__main__":
     if len(sys.argv) <= 2:
-        raise RuntimeError("usage : batch_outlet_faiss_querying.py <faiss_folder> <db_name.sqlite> [nr_of_hits]")
+        raise RuntimeError("usage : batch_tiktok_faiss_querying.py <faiss_folder> <db_name.sqlite> [nr_of_hits]")
     query_folder(sys.argv[1], sys.argv[2], int(sys.argv[3]) if len(sys.argv) > 3 else 5)

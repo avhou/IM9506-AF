@@ -1,5 +1,7 @@
 import numpy as np
 import os
+import faiss
+from sentence_transformers import SentenceTransformer
 
 from llama_index.core.node_parser import SentenceSplitter
 
@@ -39,3 +41,33 @@ def get_index_and_metadata(faiss_folder: str, model_name: str, column_name: str,
     index_path = os.path.join(faiss_folder, index_name(model_name, column_name, db_name))
     metadata_path = os.path.join(faiss_folder, metadata_name(model_name, column_name, db_name))
     return index_path, metadata_path
+
+def load_model(model_name: str, **kwargs):
+    # Load embedding model
+    model = SentenceTransformer(model_name, **kwargs)
+    print(f"embedding model loaded")
+    return model
+
+def read_index_and_metadata(index_file: str, metadata_file: str):
+    index = faiss.read_index(index_file)
+    print(f"index loaded")
+
+    chunk_metadata = np.load(metadata_file, allow_pickle=True).item()
+    print(f"metadata loaded")
+    return index, chunk_metadata
+
+def query_index_with_model(model: SentenceTransformer, index, chunk_metadata, query: str, nr_of_hits: int = 5):
+    query_embedding = model.encode([query], convert_to_numpy=True)
+    query_embedding = normalize(query_embedding)
+    D, I = index.search(query_embedding, k=nr_of_hits)
+
+    retrieved_doc_ids = [chunk_metadata.get(int(chunk_id), None) for chunk_id in I[0]]
+    doc_ids_set = set()
+    unique_retrieved_doc_ids = []
+    for doc_id in retrieved_doc_ids:
+        if doc_id not in doc_ids_set:
+            unique_retrieved_doc_ids.append(doc_id)
+        doc_ids_set.add(doc_id)
+
+    return unique_retrieved_doc_ids
+

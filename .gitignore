@@ -4,3 +4,4 @@ dataset/request_log.log
 **/venv
 videos*
 dataset-llm/__pycache__
+dataset-llm/faiss
