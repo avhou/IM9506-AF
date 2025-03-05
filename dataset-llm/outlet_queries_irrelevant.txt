@@ -1,3 +1,20 @@
-Which documents describe a plethora of topics, not necessarily all related to immigration, migrants or war refugees?
-Which documents contain a lot of dates and times, and seem to discuss many topics?
 Which documents have a high link_percentage, and seem to discuss many topics?
+Does the article summarize multiple unrelated news stories rather than focusing on immigration or refugees?
+Does the content primarily list headlines or brief summaries instead of providing an in-depth discussion?
+Does the article mention many different events, locations, or names without a clear central topic?
+Is the article a news roundup or daily or weekly digest covering a broad range of topics?
+Does the text include many dates and locations but lack detailed analysis?
+Does the article mix politics, economy, sports, and culture without a clear emphasis on migration or disinformation?
+Does the content appear to be an automated news aggregation page rather than original reporting or analysis?
+Would it not be better to all get along, instead of waging war?
+How can I, as an individual, financially contribute to help refugees or migrants?
+What are the personal experiences of individual refugees or migrants regarding war and conflict?
+What grassroots or community-led initiatives exist to support refugees?
+How have refugees contributed to sports, arts, or culture in Belgium and the Netherlands?
+What historical events have led to past refugee movements unrelated to the current geopolitical situation?
+What are the psychological effects of war on individuals and families who experience displacement?
+What are the general causes and consequences of war and conflict worldwide, without reference to migration?
+How do humanitarian organizations provide aid in conflict zones without direct ties to migration policy?
+What are the key cultural contributions of immigrant communities in Belgium and the Netherlands?
+What is the role of international diplomacy in conflict resolution, without reference to refugee movements?
+How do host societies benefit culturally and economically from long-term immigration trends, without focusing on current migration debates?
