@@ -19,7 +19,7 @@ def finalize_tiktok(tiktok_db: str):
         conn.execute("load excel;")
         conn.execute(f"""ATTACH '{tiktok_db}' as tiktok (TYPE sqlite);""")
         for table, filename in zip(["videos_2nd_stage_optie_a", "videos_2nd_stage_optie_b", "long_videos_2nd_stage_optie_a", "long_videos_2nd_stage_optie_b"],
-                         ["tiktok_russia_ukraine_max_1_min", "tiktok_more_wars_max_1_min", "tiktok_russia_ukraine_max_2_min", "tiktok_more_wars_max_2_min"]):
+                         ["tiktok_russia_ukraine_max_1_min", "tiktok_all_conflicts_max_1_min", "tiktok_russia_ukraine_max_2_min", "tiktok_all_conflicts_max_2_min"]):
             print(f"processing table {table} and file {filename}")
             if table_exists(conn, table):
                 print(f"table {table} exists, will export now")

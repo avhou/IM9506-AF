@@ -13,7 +13,7 @@ def finalize_outlets(outlet_db: str, keep_first: int = 4000):
         conn.execute("install excel;")
         conn.execute("load excel;")
         conn.execute(f"""ATTACH '{outlet_db}' as outlet (TYPE sqlite);""")
-        for pattern, filename_prefix in zip(["(russia|ukraine)", "(russia|ukraine|syria|israel|palestine)"], ["outlets_russia_ukraine", "outlets_more_wars"]):
+        for pattern, filename_prefix in zip(["(russia|ukraine)", "(russia|ukraine|syria|israel|palestine)"], ["outlets_russia_ukraine", "outlets_all_conflicts"]):
             print(f"processing pattern {pattern} and filename prefix {filename_prefix}")
             conn.execute(f""" copy ({generate_query(pattern)}) to '{filename_prefix}.xlsx' with (format xlsx, header true);""")
             conn.execute(f"""detach database if exists output;""")
