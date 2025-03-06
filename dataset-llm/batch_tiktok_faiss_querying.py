@@ -17,8 +17,12 @@ def query_folder(faiss_folder: str, db_name: str, nr_of_hits: int = 5):
         ):
             print(f"processing query file {file}, marking column {column_name} with value {value}")
             documents_to_mark = query_index(faiss_folder, db_name, file, nr_of_hits)
-            print(f"update video_hits set {column_name} = coalesce({column_name}, '') || '{value}' where number in ({','.join(map(str, documents_to_mark))});");
-            conn.execute(f"update video_hits set {column_name} = coalesce({column_name}, '') || '{value}' where number in ({','.join(map(str, documents_to_mark))});")
+            print(f"{len(documents_to_mark)} documents could be marked as {value} for column {column_name} if already marked documents were not taken into account")
+            number_corresponding_value = conn.execute(f"select count(*) from video_hits where number in ({','.join(map(str, documents_to_mark))}) and {column_name} = '{value[:-1]}';").fetchone()[0]
+            number_not_corresponding_value = conn.execute(f"select count(*) from video_hits where number in ({','.join(map(str, documents_to_mark))}) and {column_name} != '{value[:-1]}';").fetchone()[0]
+            print(f"update video_hits set {column_name} = coalesce({column_name}, '') || '{value}' where number in ({','.join(map(str, documents_to_mark))}) and (relevant not in ('y', 'n') or relevant is null) and ({column_name} not in ('y', 'n') or {column_name} is null);")
+            rows_updated = conn.execute(f"update video_hits set {column_name} = coalesce({column_name}, '') || '{value}' where number in ({','.join(map(str, documents_to_mark))}) and (relevant not in ('y', 'n') or relevant is null) and ({column_name} not in ('y', 'n') or {column_name} is null);").rowcount
+            print(f"{rows_updated} documents actually marked as {value} for column {column_name}, {number_corresponding_value} were already marked as {value[:-1]}, {number_not_corresponding_value} were marked as the opposite value")
 
 
 
