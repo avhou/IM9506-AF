@@ -5,3 +5,4 @@ dataset/request_log.log
 videos*
 dataset-llm/__pycache__
 dataset-llm/faiss
+dataset/*videos*
