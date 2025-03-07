@@ -46,16 +46,22 @@ def translations_tiktok(tiktok_db: str):
     with duckdb.connect() as conn:
         conn.execute(f"""ATTACH '{tiktok_db}' as tiktok (TYPE sqlite);""")
         try:
+            conn.execute(f"""alter table tiktok.long_videos_2nd_stage_optie_a add column detected_language text;""")
+            conn.execute(f"""alter table tiktok.long_videos_2nd_stage_optie_b add column detected_language text;""")
             conn.execute(f"""alter table tiktok.videos_2nd_stage_optie_a add column detected_language text;""")
             conn.execute(f"""alter table tiktok.videos_2nd_stage_optie_b add column detected_language text;""")
         except:
             print(f"columns detected_language already exist")
         try:
+            conn.execute(f"""alter table tiktok.long_videos_2nd_stage_optie_a add column translated_text text;""")
+            conn.execute(f"""alter table tiktok.long_videos_2nd_stage_optie_b add column translated_text text;""")
             conn.execute(f"""alter table tiktok.videos_2nd_stage_optie_a add column translated_text text;""")
             conn.execute(f"""alter table tiktok.videos_2nd_stage_optie_b add column translated_text text;""")
         except:
             print(f"columns detected_language already exist")
         try:
+            conn.execute(f"""alter table tiktok.long_videos_2nd_stage_optie_a add column keywords text;""")
+            conn.execute(f"""alter table tiktok.long_videos_2nd_stage_optie_b add column keywords text;""")
             conn.execute(f"""alter table tiktok.videos_2nd_stage_optie_a add column keywords text;""")
             conn.execute(f"""alter table tiktok.videos_2nd_stage_optie_b add column keywords text;""")
         except:
@@ -68,10 +74,16 @@ def translations_tiktok(tiktok_db: str):
         model = fasttext.load_model("lid.176.bin")
         detect_languages("tiktok.videos_2nd_stage_optie_a", conn, model)
         detect_languages("tiktok.videos_2nd_stage_optie_b", conn, model)
+        detect_languages("tiktok.long_videos_2nd_stage_optie_a", conn, model)
+        detect_languages("tiktok.long_videos_2nd_stage_optie_b", conn, model)
         do_translations("tiktok.videos_2nd_stage_optie_a", conn)
         do_translations("tiktok.videos_2nd_stage_optie_b", conn)
+        do_translations("tiktok.long_videos_2nd_stage_optie_a", conn)
+        do_translations("tiktok.long_videos_2nd_stage_optie_b", conn)
         summarize("tiktok.videos_2nd_stage_optie_a", conn, ckbert)
         summarize("tiktok.videos_2nd_stage_optie_b", conn, ckbert)
+        summarize("tiktok.long_videos_2nd_stage_optie_a", conn, ckbert)
+        summarize("tiktok.long_videos_2nd_stage_optie_b", conn, ckbert)
 
 
 def detect_language(text, model):
