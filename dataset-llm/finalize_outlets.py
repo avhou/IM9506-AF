@@ -1,6 +1,10 @@
 import sys
 import duckdb
 
+# create table existing_judgments as (select * from read_xlsx('../database/outlets_russia_ukraine.xlsx'));
+# update outlet_hits h set disinformation = (select case when trim(e.disinformation) = 'y' then 1 when trim(e.disinformation) = 'n' then 0 else null end as disinformation from existing_judgments e where e.url = h.url);
+# update outlet_hits h set relevant = (select case when trim(e.relevant) = 'y' then 1 when trim(e.relevant) = 'n' then 0 else null end as relevant from existing_judgments e where e.url = h.url);
+# drop table existing_judgments;
 def table_exists(conn, table_name) -> bool:
     result = conn.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}';").fetchone()
     return result is not None

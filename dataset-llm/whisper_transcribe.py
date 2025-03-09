@@ -47,6 +47,7 @@ def transcribe_videos(folder: str, target_db: str):
                 print(f"video {video_id} was transcribed to {transcription}")
                 os.remove(input_file)
                 conn.execute(f"update {table_name} set transcription = ? where id = ?", (transcription, video_id))
+                conn.commit()
 
 
 
