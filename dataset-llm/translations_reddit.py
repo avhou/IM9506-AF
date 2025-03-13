@@ -73,16 +73,17 @@ def detect_language(text, model):
 
 def detect_languages(table: str, conn, model):
     print(f"processing table {table}")
-    for r in conn.execute(f"select id, text from {table} where detected_language is null and transcription is not null order by id asc").fetchall():
+    for r in conn.execute(f"select id, text from {table} where detected_language is null and text is not null order by id asc").fetchall():
         id = r[0]
-        transcription = r[1]
+        text = r[1]
+        text = re.sub(r'\s+', ' ', text)
         try:
-            lang_code, confidence = detect_language(transcription, model)
+            lang_code, confidence = detect_language(text, model)
             print(f"detected language for {id} is {lang_code} with confidence {confidence}")
             conn.execute(f"update {table} set detected_language = ? where id = ?", (lang_code, id))
             conn.commit()
         except:
-            print(f"could not detect language for id {id} and text {transcription}")
+            print(f"could not detect language for id {id}")
 
 def chunk_text(text):
     sentences = splitter.split_text(text)
@@ -130,7 +131,7 @@ def translate_text_batch(text: str, tokenizer: MarianTokenizer, model: MarianMTM
 
 
 def do_translations(table: str, conn, batch_size: int = 8):
-    conn.execute(f"update {table} set translated_text = transcription where detected_language = 'en';")
+    conn.execute(f"update {table} set translated_text = text where detected_language = 'en';")
     conn.commit()
     for lang in conn.execute(f"""select detected_language from {table} where detected_language is not null and detected_language != 'en' and translated_text is null group by detected_language having count(*) > 0 order by detected_language asc;""").fetchall():
         try:
@@ -140,10 +141,11 @@ def do_translations(table: str, conn, batch_size: int = 8):
             tokenizer = MarianTokenizer.from_pretrained(model_name)
             model = MarianMTModel.from_pretrained(model_name)
             print(f"model {model_name} instantiated")
-            for video in conn.execute(f"""select id, transcription from {table} where detected_language = ? and translated_text is null and transcription is not null order by id asc;""", (lang[0],)).fetchall():
-                translation = translate_text_batch(video[1], tokenizer, model, batch_size)
-                print(f"translation for {video[0]} done: {translation}")
-                conn.execute(f"""update {table} set translated_text = ? where id = ?""", (translation, video[0]))
+            for post in conn.execute(f"""select id, text from {table} where detected_language = ? and translated_text is null and text is not null order by id asc;""", (lang[0],)).fetchall():
+                text = re.sub(r'\s+', ' ', post[1])
+                translation = translate_text_batch(text, tokenizer, model, batch_size)
+                print(f"translation for {post[0]} done: {translation[:100]}")
+                conn.execute(f"""update {table} set translated_text = ? where id = ?""", (translation, post[0]))
                 conn.commit()
         except Exception as e:
             print(f"could not translate {lang[0]}, error was {e}")
@@ -156,7 +158,7 @@ def summarize(table: str, conn, ckbert: ChunkeyBert):
     i = 1
     for translation in conn.execute(f"""select id, translated_text from {table} where translated_text is not null and keywords is null order by id asc;""").fetchall():
         try:
-            print(f"try to summarize video {i} with id {translation[0]} and text {translation[1]}")
+            print(f"try to summarize post {i} with id {translation[0]} and text {translation[1]}")
             result = ckbert.extract_keywords(
                 docs=translation[1], num_keywords=10, chunker=chunker_llama_index, vectorizer=keyphrase_vectorizer,
                 nr_candidates=10, top_n=3
