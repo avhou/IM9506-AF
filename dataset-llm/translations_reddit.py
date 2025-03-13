@@ -47,10 +47,10 @@ def translations_reddit(reddit_db: str):
         conn.execute(f"""ATTACH '{reddit_db}' as reddit (TYPE sqlite);""")
         conn.execute(f"""alter table reddit.text_2nd_stage_optie_a add column if not exists detected_language text;""")
         conn.execute(f"""alter table reddit.text_2nd_stage_optie_b add column if not exists detected_language text;""")
-        conn.execute(f"""alter table reddit.videos_2nd_stage_optie_a add column if not exists translated_text text;""")
-        conn.execute(f"""alter table reddit.videos_2nd_stage_optie_b add column if not exists translated_text text;""")
-        conn.execute(f"""alter table reddit.videos_2nd_stage_optie_a add column if not exists keywords text;""")
-        conn.execute(f"""alter table reddit.videos_2nd_stage_optie_b add column if not exists keywords text;""")
+        conn.execute(f"""alter table reddit.text_2nd_stage_optie_a add column if not exists translated_text text;""")
+        conn.execute(f"""alter table reddit.text_2nd_stage_optie_b add column if not exists translated_text text;""")
+        conn.execute(f"""alter table reddit.text_2nd_stage_optie_a add column if not exists keywords text;""")
+        conn.execute(f"""alter table reddit.text_2nd_stage_optie_b add column if not exists keywords text;""")
 
         if not os.path.exists("lid.176.bin"):
             print("downloading fasttext model")
