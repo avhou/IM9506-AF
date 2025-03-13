@@ -6,5 +6,5 @@ cat reddit*json | jq --sort-keys '.[] | . as $nested_objects | $nested_objects' 
 # drop table if exists aggregated_comments;
 # create table aggregated_comments as select id, string_agg(body, ' ') as comments from expanded_comments group by id;
 # drop table if exists texts;
-# create table texts as select r.id, case when r.title in ('[deleted]', '[removed]') then '' else r.title end as title, case when r.selftext in ('[deleted]', '[removed]') then '' else r.selftext end as selftext, c.comments from reddit r left outer join aggregated_comments c on r.id = c.id;
-# copy (select id, trim(coalesce(title, '') || ' ' || coalesce(selftext, '') || ' ' || coalesce(comments, '')) as text from texts) to 'reddit.csv';
+# create table texts as select r.id, r.subreddit, to_timestamp(created_utc) as created, case when r.title in ('[deleted]', '[removed]') then '' else r.title end as title, case when r.selftext in ('[deleted]', '[removed]') then '' else r.selftext end as selftext, c.comments from reddit r left outer join aggregated_comments c on r.id = c.id;
+# copy (select id, subreddit, created, trim(coalesce(title, '') || ' ' || coalesce(selftext, '') || ' ' || coalesce(comments, '')) as text from texts) to 'reddit.csv';
