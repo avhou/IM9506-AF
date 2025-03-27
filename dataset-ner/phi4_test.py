@@ -1,19 +1,19 @@
 import transformers
 
-pipeline = transformers.pipeline(
-    "text-generation",
-    model="mistralai/Mistral-Small-24B-Instruct-2501",
-    model_kwargs={"torch_dtype": "auto"},
-    device_map="auto",
-)
-
-
 # pipeline = transformers.pipeline(
 #     "text-generation",
-#     model="microsoft/phi-4",
+#     model="mistralai/Mistral-Small-24B-Instruct-2501",
 #     model_kwargs={"torch_dtype": "auto"},
 #     device_map="auto",
 # )
+
+
+pipeline = transformers.pipeline(
+    "text-generation",
+    model="microsoft/phi-4",
+    model_kwargs={"torch_dtype": "auto"},
+    device_map="auto",
+)
 
 # messages = [
 #     {"role": "system", "content": "You are an expert AI system that specializes in named entity recognition and knowledge graph extraction.  You are designed take in any input text, extract the relevant information, and output a knowledge graph in turtle (TTL) format.  Do not provide any explanation or justification.  Only output TTL knowledge graphs."},
@@ -40,7 +40,7 @@ pipeline = transformers.pipeline(
 # ]
 #
 messages = [
-    {"role": "system", "content": "You are an expert AI system that specializes in named entity recognition and knowledge graph extraction.  You are designed take in any input text, extract the relevant information, and output a knowledge graph in turtle (TTL) format.  Do not provide any explanation or justification.  Only output TTL knowledge graphs."},
+    {"role": "system", "content": "You are an expert AI system that specializes in named entity recognition and knowledge graph extraction. Your task is to analyse any provided input text, identify and extract the relevant entities and their attributes and relationships, and output a knowledge graph in Turtle (TTL) format composed by RDF triples (subject, predicate, object). Only output the TTL-formatted knowledge graph and do not include any explanations.  Be as succinct as possible and only include the most relevant information."},
     {"role": "user", "content": """
 Vlaams Belang strongly disagrees with the purple-Green government planning billions of euros without any discussion on living wages for refugees Ukrainians.
 About 665 million euros until the end of July.
@@ -71,7 +71,7 @@ Living wages are unnecessary.
 # """},
 # ]
 
-outputs = pipeline(messages, max_new_tokens=512)
+outputs = pipeline(messages, max_new_tokens=2048)
 print(outputs[0]["generated_text"][-1])
 
 
