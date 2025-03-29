@@ -120,10 +120,43 @@ Therefore, to detect each kind of narrative, I would propose the following quest
 - fear: Do open borders lead to uncontrolled waves of criminals and terrorists?  Do open borders attract criminals and terrorists?
 - apocalyptic: Is immigration an existential threat to Western society?
 
-  
+
+Instead of phrasing this like questions to be queried against the vector store, would it be better to drop the question and formulate more like "find documents that contain economic disinformation narratives, for example documents talking about immigrants that are a financial burden on the welfare system, or immigrants that drain public resources"?
+
+thank you for your feedback
 
 
-3. **Is immigration an existential threat to our society?**  
+Dear Clara and Stefano,
+
+as discussed, I have been working on semantic embeddings in order to help judging whether 1) documents are relevant and 2) documents contain disinformation.
+
+First of all, when filtering the summaries of the +/- 20.000 hits to those containing Russia or Ukraine, this results in 1259 candidate articles.   When filtering to the broader set of conflicts, this results in 2147 candidate articles.  In both cases, the majority of candidates *after* filtering come from news outlets (about 90%), not from political parties (about 10%).  Candidates *before* filtering however, show a 80% - 20% distribution.
+
+I have setup the necessary infrastructor to populate a FAISS vector store, and
+
+- experimented with several embedding models (sentence-transformers/all-MiniLM-L6-v2 and nomic-ai/nomic-embed-text-v2-moe)
+- experimented with embedding of both the original content and the translated content
+- experimented with different FAISS distance metrics (euclidian distance and cosine similarity)
+
+My approach to make judgments by semantically querying the vector store has been as follows :
+
+- generate a list of questions to make a judgment (ie relevant, irrelevant, disinformation)
+- each question is sent to the vector store and the top-n most similar document ids are retrieved
+- the union of all document ids found by answering all the questions is then generated
+
+
+Please find attached the lists of questions I have used so far.   The relevance of the results varies wildly ... sometimes being spot on, sometimes being wildly off.  For example, there is (only?) a 20% overlap of documents marked as both irrelevant and relevant.
+
+
+Questions :
+
+- is the imbalance between percentage of hits coming from media outlets - political parties before (80%-20%) and after (90%-10%) filtering to specific conflicts something to worry about?  Or do we just accept that using the 2 stage setup we have used, news outlets will be more prevalent in the search results?
+- do you see flaws in the methodology?
+- do you have suggestions on how to improve the questions?
+- do have have suggestions on the combination of embedding model, distance metric, and whether to use the original content or a translated (Helsinki-NLP models) version?
+
+
+I have also attached the candidate set when applying the strict filtering of just the Russia - Ukraine conflict.
 
 
 potential questions :
@@ -201,6 +234,82 @@ most commonly used disinformation discourses.
 - **Preferential Treatment:** False beliefs claim immigrants receive undue benefits.  
 - **Security Risk:** Immigrants are accused of introducing terrorism or criminal elements.  
 - **Existential Threat:** Immigration is portrayed as a danger to the very fabric of society.
+
+
+This is a great approach—framing the questions around semantic relevance instead of direct yes/no checks will make retrieval more effective. Below is a refined and expanded version of your lists with some added depth and nuance.  
+
+---
+
+### **a) Questions to identify articles that are not relevant**  
+These questions focus on topics that may be loosely related to immigration but do not contribute to the research on disinformation surrounding immigration.  
+
+- What are the personal experiences of individual refugees or migrants regarding war and conflict?  
+- What grassroots or community-led initiatives exist to support refugees?  
+- How have refugees contributed to sports, arts, or culture in Belgium and the Netherlands?  
+- What historical events have led to past refugee movements unrelated to the current geopolitical situation?  
+- What are the psychological effects of war on individuals and families who experience displacement?  
+- What are the general causes and consequences of war and conflict worldwide, without reference to migration?  
+- How do humanitarian organizations provide aid in conflict zones without direct ties to migration policy?  
+- What are the key cultural contributions of immigrant communities in Belgium and the Netherlands?  
+- What is the role of international diplomacy in conflict resolution, without reference to refugee movements?  
+- How do host societies benefit culturally and economically from long-term immigration trends, without focusing on current migration debates?  
+
+---
+
+### **b) Questions to identify articles that are relevant**  
+These questions focus on retrieving articles that discuss migration, policies, and public discourse around refugees.  
+
+- How is the European Union, and specifically Belgium and the Netherlands, responding to the Ukrainian refugee crisis?  
+- Are Ukrainian refugees receiving different treatment compared to refugees from Syria, Afghanistan, or Africa?  
+- How prepared are Belgium and the Netherlands for an increase in war refugees? Do they have enough shelter, jobs, and school capacity?  
+- What government policies exist for war refugees in Belgium and the Netherlands?  
+- What are the positions of different political parties in Belgium and the Netherlands regarding Ukrainian refugees?  
+- What are the positions of different political parties in Belgium and the Netherlands regarding refugees from Syria, Afghanistan, and Africa?  
+- What debates exist within the EU about asylum policies and border security?  
+- What are the known facts and statistics about immigration in Belgium, the Netherlands, and the EU?  
+- How does media coverage of migration influence public perception and political decision-making?  
+- What role do NGOs and international organizations play in managing refugee flows to Belgium and the Netherlands?  
+
+---
+
+### **c) Questions to identify articles containing disinformation**  
+These questions aim to detect narratives that spread false or misleading information about immigration and refugees.  
+
+- Do immigrants place a financial burden on the welfare system?  
+- Are immigrants disproportionately dependent on public resources compared to native citizens?  
+- What is the impact of immigration on national economic stability?  
+- Are immigrants responsible for job losses among native-born workers?  
+- How does immigration affect wages for local workers?  
+- Do immigrants increase crime rates?  
+- Are there specific crimes that are disproportionately committed by immigrants compared to the native population?  
+- Are immigrants linked to the spread of infectious diseases?  
+- Do immigration policies fail to prevent the introduction of diseases into the country?  
+- Do immigrants resist integrating into society and local culture?  
+- Are current immigration policies leading to the replacement of native populations?  
+- Is mass immigration being used as a deliberate strategy to alter the demographics of Western nations?  
+- Do global elites or specific groups have a coordinated effort to change the population makeup of Europe through immigration?  
+- Does uncontrolled immigration weaken national identity and social cohesion?  
+- Are immigrants receiving unfair preferential treatment over native-born citizens?  
+- Do open borders result in an influx of criminals and terrorists?  
+- Is mass immigration an existential threat to Western nations?  
+- Does the influx of refugees and migrants lead to the collapse of social cohesion?  
+- Is there a deliberate effort to use migration as a tool to erode traditional values and cultural identity?  
+
+---
+
+Would you like me to refine the phrasing further, or add any new perspectives?
+Would you like to refine these questions further based on specific concerns?
+
+
+issues news outlets :
+
+very often small article + lots of links / other irrelevant content
+very often liveblogs : multitude of different topics discussed, most not relevant -> marked as not relevant
+
+very few clear cases of disinformation -> was to be expected since news outlets are supposed to be more or less neutral
+lots of overlap in the content, as is to be expected
+
+gratis onbeperkt toegang tot? -> alles daarna verwijderen
 * links
 
 [[https://emschwartz.me/understanding-the-bm25-full-text-search-algorithm/][BM25 search algorithm]]
@@ -330,6 +439,26 @@ perhaps we can play with the video_length field as well.   From the docs :
 
 A priori I would rather keep all videos, also the short ones, but if needed, this could be used as a filter as well.
 
+
+Dear Clara and Stefano,
+I have evaluated the reddit posts and comments using the 2 stage approach we discussed.  I looked into 412 discussions, I marked 55 of those relevant and 52 out of those (almost 95%) as containing disinformation.
+
+Some additional remarks :
+
+- i have unnested all comments and discussions and concatenated this to get the full text of the article.
+- these discussions often get comments of lots of different people and contain many different opinions.  If one or more of the comments contained disinformation, I marked the article as containing disinformation
+- the unnesting makes it difficult to read from the text field, I included the URIs for easier reading on reddit itself
+- the Belgium4 subreddit was actually banned and blocked a couple of weeks ago for "promoting hate"
+- since there are so many opinions and people involved in each discussion, automatic classification / keyword detection generates nonsensical outputs - I went through the list manually.
+
+There is a lot of - blatant and very open - racism on these subreddits.  The results so far confirm my gut feeling : news articles are the most neutral, political parties are a bit more biased, and social media contains most unfilterd, raw disinformation.
+
+Please find the results attached.
+
+Given the previous results, this would yield a database of 394 articles, with 107 of them containing disinformation (27%).
+
+
+
 ** <2025-02-12 Wed> 
 
 Dear Clara and Stefano,
@@ -357,3 +486,47 @@ The research API does not allow to download videos, but there are tools that are
 
 Interested in hearing your thoughts on this.
 
+** <2025-03-21 Fri> meeting Clara and Stefano
+
+- writing the methodology part for the dataset.  how elaborate should this be? diagrams?  keyword list, subreddit lists, ... (in appendices?)
+
+  diagram + description of final data set (words, length, word cloud general text description) 5 pages, overview of the platforms, list of keyswords in appendices.  separate chapter for dataset.  first deliverable.  by manual analysis.
+  
+- is database good enough as it is now?  do more cleansing?   split reddit discussions (big scope!)?  take tiktok comments into account?
+
+start with dataset right now.  reddit threading bekijken? size is OK.
+
+  
+- entity extraction and RDF experiments results.
+
+  TODO : send prompt to Stefano, use JSON instead
+  llama 3.2 70 B for translations
+
+  
+- next steps?  sources facts? scope graphRAG?
+
+ extract triples, queries to highlight disinformation. (structure or content)  
+ deepseek distilled R1, new mistral 1, llama 3.2/4
+ few shot with triples en ook textual 
+ triples pruning , eerst alles extracten en dan refinement of concepts
+
+conclusies :
+- dataset moet een aparte RQ1 worden.  expliciet in aparte chapter steken en daar een deliverable van maken
+- starten met deze core dataset en focussen op pipeline extraction
+- tiktok/reddit, Clara vermeldt dat ze in eerdere research een duidelijk verschil zagen tussen de sitatuatie zonder en met comments van tiktok.  dus mss toch mee te nemen.
+- reddit -> uit te splitsen naar threads
+- rapportering van resultaten dient te gebeuren per platform (dus hier web/tiktok/reddit)
+- voor wat betreft : is de dataset groot genoeg (is ook imbalanced)?  hiervoor kunnen we vermelden in de text dat we eerder kijken naar de reasoning / structuur dan echt naar de inhoud.
+- voor extraheren van rdf : eventueel kijken naar output in json, dus 3x key-value (subject, predicate, object).
+- quadruples stockeren van article id en rdf triples.
+- voor vertalingen google translate gebruiken, of eventueel een LLM gebruiken om te vertalen Llama 3.2 70B.
+- nu triples extraheren voor alle documenten, en dan queries definieren op deze triples die disinformation highlighten.  sparql queries?  reasoning?  what are the properties of disinformation?  link the same concepts together (bad logic, bad connections).
+- check for disinformation patterns as they are reported in research, and see if we can find these patterns in our data.  extract the info and highlight the patterns.
+- too ambitious : Stefano benadrukt het belang van context en het wijzigen in de tijd van opinies.   dus eventueel moeten we kijken naar hoe de meningen wijzigen over de tijd heen, en dan in het bijzonder voor SMPs.   beperken tot de tijd, niet tot interacties tussen personen.
+- connections between argumentations, between statements en kijken naar de structuur van de RDF extracted data
+- RQ1 uitbreiden door triples te introduceren in de few-shot/one-shot.  give some triple examples.
+- RQ2 : full rag and try to leverage RAG database.
+- RQ3: compare full article + sentiment score <--> triples + sentiment score.
+- next time : check queries we can do with sparql queries + detect zero-shot met en zonder triples met deepseek Qwen (en dus niet de 70B!!)
+- voor alle documenten triples extracten en in database.   dan connecteren tussen triples van verschillende documenten.
+- triples pruning : dus eerst alle triples extracten. en dan proberen opkuisen in een lusje en vragen om de concepten te refinen.  dit levert je een ontology op.   dan vraag je nogmaals om de triples te extracten en dan zeg je dat die de ontology moeten gebruiken.  1 x ontology verfijnen.

@@ -63,7 +63,7 @@
         <mxCell id="oxhq3QY5mhj4Ew_57Wnm-11" value="&lt;b&gt;#: 1.259&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;" vertex="1" parent="dNxyNK7c78bLwvsdeMH5-20">
           <mxGeometry x="515" y="195" width="70" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="oxhq3QY5mhj4Ew_57Wnm-12" value="&lt;b&gt;#: 1.259&lt;/b&gt;&lt;div&gt;&lt;b&gt;R: 252&lt;/b&gt;&lt;/div&gt;&lt;div&gt;&lt;b&gt;M: 36&lt;/b&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;" vertex="1" parent="dNxyNK7c78bLwvsdeMH5-20">
+        <mxCell id="oxhq3QY5mhj4Ew_57Wnm-12" value="&lt;b&gt;#: 1.259&lt;/b&gt;&lt;div&gt;&lt;b&gt;R: 252&lt;/b&gt;&lt;/div&gt;&lt;div&gt;&lt;b&gt;D: 36&lt;/b&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;" vertex="1" parent="dNxyNK7c78bLwvsdeMH5-20">
           <mxGeometry x="845" y="195" width="70" height="30" as="geometry" />
         </mxCell>
         <mxCell id="dNxyNK7c78bLwvsdeMH5-21" value="Tiktok" style="swimlane;html=1;startSize=20;horizontal=0;rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;swimlaneFillColor=#D5E8D4;" parent="dNxyNK7c78bLwvsdeMH5-19" vertex="1">
@@ -129,7 +129,7 @@
         <mxCell id="oxhq3QY5mhj4Ew_57Wnm-16" value="&lt;b&gt;#: 357&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;" vertex="1" parent="dNxyNK7c78bLwvsdeMH5-21">
           <mxGeometry x="687" y="175" width="70" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="oxhq3QY5mhj4Ew_57Wnm-17" value="&lt;b&gt;#: 357&lt;/b&gt;&lt;div&gt;&lt;b&gt;R: 88&lt;/b&gt;&lt;/div&gt;&lt;div&gt;&lt;b&gt;M: 24&lt;/b&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;" vertex="1" parent="dNxyNK7c78bLwvsdeMH5-21">
+        <mxCell id="oxhq3QY5mhj4Ew_57Wnm-17" value="&lt;b&gt;#: 357&lt;/b&gt;&lt;div&gt;&lt;b&gt;R: 88&lt;/b&gt;&lt;/div&gt;&lt;div&gt;&lt;b&gt;D: 24&lt;/b&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;" vertex="1" parent="dNxyNK7c78bLwvsdeMH5-21">
           <mxGeometry x="845" y="175" width="70" height="30" as="geometry" />
         </mxCell>
         <mxCell id="dNxyNK7c78bLwvsdeMH5-22" value="Reddit" style="swimlane;html=1;startSize=20;horizontal=0;rounded=1;fillColor=#ffe6cc;strokeColor=#d79b00;swimlaneFillColor=#FFE6CC;" parent="dNxyNK7c78bLwvsdeMH5-19" vertex="1">
@@ -185,7 +185,7 @@
         <mxCell id="oxhq3QY5mhj4Ew_57Wnm-21" value="&lt;b&gt;#: 412&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;" vertex="1" parent="dNxyNK7c78bLwvsdeMH5-22">
           <mxGeometry x="524" y="185" width="70" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="oxhq3QY5mhj4Ew_57Wnm-22" value="&lt;b&gt;#: 412&lt;/b&gt;&lt;div&gt;&lt;b&gt;R: 55&lt;/b&gt;&lt;/div&gt;&lt;div&gt;&lt;b&gt;M: 52&lt;/b&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;" vertex="1" parent="dNxyNK7c78bLwvsdeMH5-22">
+        <mxCell id="oxhq3QY5mhj4Ew_57Wnm-22" value="&lt;b&gt;#: 412&lt;/b&gt;&lt;div&gt;&lt;b&gt;R: 55&lt;/b&gt;&lt;/div&gt;&lt;div&gt;&lt;b&gt;D: 52&lt;/b&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;" vertex="1" parent="dNxyNK7c78bLwvsdeMH5-22">
           <mxGeometry x="845" y="185" width="70" height="30" as="geometry" />
         </mxCell>
       </root>
