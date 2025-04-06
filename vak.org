@@ -361,6 +361,12 @@ https://docs.lxp.lu/first-steps/handling_jobs/#viewing-jobs-in-the-queue
 python scripts en modellen downloaden op voorhand :
 https://docs.lxp.lu/howto/HFInference/
 
+
+huggingface :
+
+LLM VRAM memory calculator :
+https://huggingface.co/docs/transformers/main/en/llm_optims
+
 ** tiktok
 [[https://developers.tiktok.com/doc/vce-getting-started][dev account getting started]]
 [[https://developers.tiktok.com/research/7467661064878098438][credentials dev account]]
