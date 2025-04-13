@@ -310,6 +310,81 @@ very few clear cases of disinformation -> was to be expected since news outlets 
 lots of overlap in the content, as is to be expected
 
 gratis onbeperkt toegang tot? -> alles daarna verwijderen
+
+** <2025-03-21 Fri> meeting Clara and Stefano
+
+- writing the methodology part for the dataset.  how elaborate should this be? diagrams?  keyword list, subreddit lists, ... (in appendices?)
+
+  diagram + description of final data set (words, length, word cloud general text description) 5 pages, overview of the platforms, list of keyswords in appendices.  separate chapter for dataset.  first deliverable.  by manual analysis.
+  
+- is database good enough as it is now?  do more cleansing?   split reddit discussions (big scope!)?  take tiktok comments into account?
+
+start with dataset right now.  reddit threading bekijken? size is OK.
+
+  
+- entity extraction and RDF experiments results.
+
+  TODO : send prompt to Stefano, use JSON instead
+  llama 3.2 70 B for translations
+
+  
+- next steps?  sources facts? scope graphRAG?
+
+ extract triples, queries to highlight disinformation. (structure or content)  
+ deepseek distilled R1, new mistral 1, llama 3.2/4
+ few shot with triples en ook textual 
+ triples pruning , eerst alles extracten en dan refinement of concepts
+
+conclusies :
+- dataset moet een aparte RQ1 worden.  expliciet in aparte chapter steken en daar een deliverable van maken
+- starten met deze core dataset en focussen op pipeline extraction
+- tiktok/reddit, Clara vermeldt dat ze in eerdere research een duidelijk verschil zagen tussen de sitatuatie zonder en met comments van tiktok.  dus mss toch mee te nemen.
+- reddit -> uit te splitsen naar threads
+- rapportering van resultaten dient te gebeuren per platform (dus hier web/tiktok/reddit)
+- voor wat betreft : is de dataset groot genoeg (is ook imbalanced)?  hiervoor kunnen we vermelden in de text dat we eerder kijken naar de reasoning / structuur dan echt naar de inhoud.
+- voor extraheren van rdf : eventueel kijken naar output in json, dus 3x key-value (subject, predicate, object).
+- quadruples stockeren van article id en rdf triples.
+- voor vertalingen google translate gebruiken, of eventueel een LLM gebruiken om te vertalen Llama 3.2 70B.
+- nu triples extraheren voor alle documenten, en dan queries definieren op deze triples die disinformation highlighten.  sparql queries?  reasoning?  what are the properties of disinformation?  link the same concepts together (bad logic, bad connections).
+- check for disinformation patterns as they are reported in research, and see if we can find these patterns in our data.  extract the info and highlight the patterns.
+- too ambitious : Stefano benadrukt het belang van context en het wijzigen in de tijd van opinies.   dus eventueel moeten we kijken naar hoe de meningen wijzigen over de tijd heen, en dan in het bijzonder voor SMPs.   beperken tot de tijd, niet tot interacties tussen personen.
+- connections between argumentations, between statements en kijken naar de structuur van de RDF extracted data
+- RQ1 uitbreiden door triples te introduceren in de few-shot/one-shot.  give some triple examples.
+- RQ2 : full rag and try to leverage RAG database.
+- RQ3: compare full article + sentiment score <--> triples + sentiment score.
+- next time : check queries we can do with sparql queries + detect zero-shot met en zonder triples met deepseek Qwen (en dus niet de 70B!!)
+- voor alle documenten triples extracten en in database.   dan connecteren tussen triples van verschillende documenten.
+- triples pruning : dus eerst alle triples extracten. en dan proberen opkuisen in een lusje en vragen om de concepten te refinen.  dit levert je een ontology op.   dan vraag je nogmaals om de triples te extracten en dan zeg je dat die de ontology moeten gebruiken.  1 x ontology verfijnen.
+
+** <2025-04-08 Tue> meeting Clara and Stefano
+
+finalized:
+- dataset creation chapter
+- RQ1 base experiment
+- RQ2 extract triples (llama and phi4)
+- RQ2 extract knowledge base.  Phi4 was unable to do this, only with llama.
+- RQ2/1 extract refined triples based on the knowledge base
+- RQ1 triple experiment, still some articles to do due to max_token_length
+- RQ1 refined triple experiment : llama and deepseek-qwen.  todo for deepseek, very computationally expensive (>24 hours)
+- nothing done yet with the phi4 triples (compute budget)!
+- first draft of RQ1 methodology
+- first part of recreating threads for reddit.  incomplete data / deleted data / ...
+
+to discuss :
+- still struggling with mechanics of huge models, cuda, properly distributing over multiple GPUs, variability in runtimes, ... 
+- structure of report.  results?  discussion?
+- exploratory analysis of the data, percentages, statistics in new chapter exploratory data analysis
+  introduction : ook de LLMs bespreken die we gaan gebruiken (there are many families, some do context analysis, 1 - 2 lines per LLM). also include a motivation paragraph.   disinformation campaings increase, weve seen it in covid, weve seen it during wars.  2 - 3 pages
+  background : architecture of the LLMS, how it was trained, variaties (bv gewone deepseek vs qwen), we gebruiken deze variant in onze research omdat .., nieuwe chapter of 2.5 met de technische details, Vermelden huggingface, number of params, reasoning, cot, ... dan ook in 2.5 of eventueel een 2.6 : What is a knowledge graph?  mooi voorbeeldje tonen van een KG, uitleggen hoe de entitiies in elkaar zitten etc.
+  related research : add one section on disinformation detection solutions 3.6 : veel gedaan met BERT, it is a bit of a struggle.  Focus on 5 studies that focus on disinformation detection.  Stefano: suggests generic parts into the background (parts about RAG en GRAG go into the background, in de nieuwe technische subchapter).  and then focus on aspects of classifying disinformation in the related research chapter.
+  results chapter : explain the results
+  discussion and conclusions chapter : for each rq, explain in one paragraph what you did, and at the end explain what is the answer to the main RQ.  en dan ook 2 - 3 future research ideas, bv if we have more data, more CPU, or more models
+- RQ2 setup
+  - Stefano : doel is om via triples similar triples te vinden, maar dan wel de tekst van de articles te injecteren in de LLM om de classificatie te verbeteren.  dus niet de triples injecteren.  dus gebruiken van de structuur die triples ons bieden, maar wel de sterkte van LLM met de volledig tekst gebruiken
+  - graphdb containing all triples?  only disinformation?  multiple dbs?
+  - exact setup of experiments RQ2
+    use both full KG and disinformation KG.  Stefano zegt eerder volledige KG te gebruiken. 80% training 20% test, ontology with the 80%.  pytorch geometric, stellargraph (keras) rdf2vec.
+  - triples seem to be very nuanced.  not trivial to see cypher queries to detect disinformation discourses.  llama almost exclusively one hop connections.   phi4 a bit more "few" hop connections.  ie no reasoning chains present in the extracted triples / knowledge graphs.
 * links
 
 [[https://emschwartz.me/understanding-the-bm25-full-text-search-algorithm/][BM25 search algorithm]]
@@ -464,7 +539,6 @@ Please find the results attached.
 Given the previous results, this would yield a database of 394 articles, with 107 of them containing disinformation (27%).
 
 
-
 ** <2025-02-12 Wed> 
 
 Dear Clara and Stefano,
@@ -492,47 +566,35 @@ The research API does not allow to download videos, but there are tools that are
 
 Interested in hearing your thoughts on this.
 
-** <2025-03-21 Fri> meeting Clara and Stefano
 
-- writing the methodology part for the dataset.  how elaborate should this be? diagrams?  keyword list, subreddit lists, ... (in appendices?)
+** <2025-04-12 Sat> 
 
-  diagram + description of final data set (words, length, word cloud general text description) 5 pages, overview of the platforms, list of keyswords in appendices.  separate chapter for dataset.  first deliverable.  by manual analysis.
-  
-- is database good enough as it is now?  do more cleansing?   split reddit discussions (big scope!)?  take tiktok comments into account?
+Dear Clara and Stefano,
 
-start with dataset right now.  reddit threading bekijken? size is OK.
+I was investigating pyrdf2vec, but wanted to double check methodology.
 
-  
-- entity extraction and RDF experiments results.
+In rdf2vec, you train a model on a number of triples.  Lets assume the following, simplified example, which we would get from the training part of our extracted triples :
 
-  TODO : send prompt to Stefano, use JSON instead
-  llama 3.2 70 B for translations
+Alice -> knows -> Bob
+Bob -> knows -> Dean
 
-  
-- next steps?  sources facts? scope graphRAG?
+You would train a model, passing a list of entitities you want to train on.  That would typically be the list of subjects (here Alice and Bob), but you could include the objects as well (Bob and Dean).
 
- extract triples, queries to highlight disinformation. (structure or content)  
- deepseek distilled R1, new mistral 1, llama 3.2/4
- few shot with triples en ook textual 
- triples pruning , eerst alles extracten en dan refinement of concepts
+Now lets assume I have trained this model, stored it in a vector database and now take my testing part of the dataset.  I encounter this triple :
 
-conclusies :
-- dataset moet een aparte RQ1 worden.  expliciet in aparte chapter steken en daar een deliverable van maken
-- starten met deze core dataset en focussen op pipeline extraction
-- tiktok/reddit, Clara vermeldt dat ze in eerdere research een duidelijk verschil zagen tussen de sitatuatie zonder en met comments van tiktok.  dus mss toch mee te nemen.
-- reddit -> uit te splitsen naar threads
-- rapportering van resultaten dient te gebeuren per platform (dus hier web/tiktok/reddit)
-- voor wat betreft : is de dataset groot genoeg (is ook imbalanced)?  hiervoor kunnen we vermelden in de text dat we eerder kijken naar de reasoning / structuur dan echt naar de inhoud.
-- voor extraheren van rdf : eventueel kijken naar output in json, dus 3x key-value (subject, predicate, object).
-- quadruples stockeren van article id en rdf triples.
-- voor vertalingen google translate gebruiken, of eventueel een LLM gebruiken om te vertalen Llama 3.2 70B.
-- nu triples extraheren voor alle documenten, en dan queries definieren op deze triples die disinformation highlighten.  sparql queries?  reasoning?  what are the properties of disinformation?  link the same concepts together (bad logic, bad connections).
-- check for disinformation patterns as they are reported in research, and see if we can find these patterns in our data.  extract the info and highlight the patterns.
-- too ambitious : Stefano benadrukt het belang van context en het wijzigen in de tijd van opinies.   dus eventueel moeten we kijken naar hoe de meningen wijzigen over de tijd heen, en dan in het bijzonder voor SMPs.   beperken tot de tijd, niet tot interacties tussen personen.
-- connections between argumentations, between statements en kijken naar de structuur van de RDF extracted data
-- RQ1 uitbreiden door triples te introduceren in de few-shot/one-shot.  give some triple examples.
-- RQ2 : full rag and try to leverage RAG database.
-- RQ3: compare full article + sentiment score <--> triples + sentiment score.
-- next time : check queries we can do with sparql queries + detect zero-shot met en zonder triples met deepseek Qwen (en dus niet de 70B!!)
-- voor alle documenten triples extracten en in database.   dan connecteren tussen triples van verschillende documenten.
-- triples pruning : dus eerst alle triples extracten. en dan proberen opkuisen in een lusje en vragen om de concepten te refinen.  dit levert je een ontology op.   dan vraag je nogmaals om de triples te extracten en dan zeg je dat die de ontology moeten gebruiken.  1 x ontology verfijnen.
+Tom -> likes -> Alice
+
+The goal is to generate an embedding for Tom, and look for similar vectors in the vector database, from there fetch the triples and inject them in the query to the LLM.
+
+However, pyrdf2vec needs to know about all entitities you want to generate embeddings for.  So, asking for an embedding for "Tom" will fail since no walks for Tom will have been done during training.
+
+This presents a problem for methodology : we want to split the dataset in a training and testing part.  The testing data should be unseen by the model.  But unseen data cannot be embedded by the model.  There appear to be at least 2 paths :
+
+- train the model on the entire knowledge graph.   no unseen entities means embeddings can always be done, but it also means triples will be a perfect match with themselves, which is not what we want.
+- interpolate embeddings of the triple that are known in the training model.  ie in this case Tom -> likes -> Alice, you could ask for the embedding of Tom (does not exist), of likes (does not exist) and Alice (does exist).  Note this only works in any of the subject, predicate, object are in the trained model, ie Tom -> likes -> Elsa would not work.
+
+Some other options include returning an average vectors or an origin vector for unknown entitities but those are not great either.
+
+Am I missing something very obvious here?
+
+Thank you for any clarification!
