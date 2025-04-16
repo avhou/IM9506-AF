@@ -8,6 +8,7 @@ import re
 
 
 class RedditEntry(BaseModel):
+    url: str
     id: str
     text: str
     comments: List['RedditEntry']
@@ -41,6 +42,7 @@ class FlatCommentEntry(BaseModel):
     parent_id: Optional[str | int] = Field(default=None)
 
 class FlatEntry(BaseModel):
+    url: str
     id: str
     name: str
     title: str
@@ -81,7 +83,7 @@ def flat_comment_entry_to_reddit_entry(flat_comment_entry: FlatCommentEntry, com
     comments = []
     if name is not None:
         comments = find_children_of(name, comment_map)
-    return RedditEntry(id=id, text=text, comments=comments)
+    return RedditEntry(id=id, text=text, comments=comments, url="")
 
 
 def flat_entry_to_reddit_entry(flat_entry: FlatEntry) -> RedditEntry:
@@ -89,7 +91,7 @@ def flat_entry_to_reddit_entry(flat_entry: FlatEntry) -> RedditEntry:
     text = flat_entry.title if flat_entry.selftext is None else f"{clean_text(flat_entry.title)}. {clean_text(flat_entry.selftext)}"
     comment_map = flat_entry.comments_to_map()
     comments = find_children_of(flat_entry.name, comment_map)
-    reddit_id_set = RedditEntry(id=id, text=text, comments=comments).id_set()
+    reddit_id_set = RedditEntry(id=id, text=text, comments=comments, url=flat_entry.url).id_set()
     names_in_flat_comments = set(str(c.name) for c in flat_entry.comments if c.name is not None and isinstance(c.name, str))
 
     # voor diegenen die nog niet zijn omgezet, maar die wel in de flat_id_set zitten en die niet de flat_entry.id zijn
@@ -101,20 +103,24 @@ def flat_entry_to_reddit_entry(flat_entry: FlatEntry) -> RedditEntry:
                 extra_comments.append(flat_comment_entry_to_reddit_entry(flat_entry_comment, comment_map))
 
     comments.extend(extra_comments)
-    return RedditEntry(id=id, text=text, comments=comments)
+    return RedditEntry(id=id, text=text, comments=comments, url=flat_entry.url)
 
-def process_reddit(input_folder: str, input_db: str):
+def process_reddit(input_folder: str, input_db: str, output_db: str):
     data_per_subreddit: Dict[str, List[FlatEntry]] = {}
     pattern = r"^reddit-(?P<subreddit>[^-]+)-(?P<keyword>[^-]+)\.json$"
 
     ids = set()
+    id_to_url_map = {}
     subreddits = set()
 
     print(f"getting unique ids and subreddits")
     with sqlite3.connect(input_db) as conn:
-        for row in conn.execute(f"select distinct json_extract(metadata, '$.id'), json_extract(metadata, '$.subreddit') from articles where source = 'reddit' and disinformation = 'y'"):
-            ids.add(row[0])
+        for row in conn.execute(f"select distinct json_extract(metadata, '$.id'), json_extract(metadata, '$.subreddit'), url from articles where source = 'reddit' and disinformation = 'y'"):
+            id = row[0]
+            ids.add(id)
             subreddit = row[1]
+            url = row[2]
+            id_to_url_map[id] = url
 
             subreddits.add(subreddit)
             if subreddit not in data_per_subreddit:
@@ -135,22 +141,30 @@ def process_reddit(input_folder: str, input_db: str):
                     for id, value in data.items():
                         if id in ids:
                             # print(f"adding entry {id}")
+                            print(f"adding url {id_to_url_map[id]} for id {id}")
+                            value["url"] = id_to_url_map[id]
                             entry = FlatEntry(**value)
                             data_per_subreddit[subreddit].append(entry)
 
-    for subreddit, entries in data_per_subreddit.items():
-        print(f"processing subreddit {subreddit}")
-        for entry in entries:
-            reddit_entry = flat_entry_to_reddit_entry(entry)
-            print(RedditEntry.model_dump_json(reddit_entry, indent=2))
-            print(f"====== nr of comments {reddit_entry.number_of_comments()} ======")
-        #     break
-        # break
+    with sqlite3.connect(input_db) as conn_input:
+        with sqlite3.connect(output_db) as conn_output:
+            conn_output.execute(f"create table if not exists articles_reddit(source text, url text, timestamp text, metadata text, detected_language text, text text, translated_text text, keywords text, relevant text, disinformation text)")
+            for subreddit, entries in data_per_subreddit.items():
+                print(f"processing subreddit {subreddit}")
+                for entry in entries:
+                    reddit_entry = flat_entry_to_reddit_entry(entry)
+                    # print(RedditEntry.model_dump_json(reddit_entry, indent=2))
+                    print(f"====== nr of flat comments {0 if entry.comments is None else len(entry.comments)} nr of comments {reddit_entry.number_of_comments()} ======")
+                    print(reddit_entry.url)
+                    print(f"select source, url, timestamp, metadata, detected_language, text, translated_text, keywords, relevant, disinformation from articles where url = {reddit_entry.url} limit 1")
+                    input_row = conn_input.execute(f"select source, url, timestamp, metadata, detected_language, text, translated_text, keywords, relevant, disinformation from articles where url = {reddit_entry.url} limit 1").fetchone()[0]
+                    input_source = input_row[0]
+                    print(f"input source {input_source}")
 
 
 
 
 if __name__ == "__main__":
-    if len(sys.argv) <= 1:
-        raise RuntimeError("usage : reddit-comment-extractor.py <reddit_folder> <input_db")
-    process_reddit(sys.argv[1], sys.argv[2])
+    if len(sys.argv) <= 3:
+        raise RuntimeError("usage : reddit-comment-extractor.py <reddit_folder> <input_db> <output_db>")
+    process_reddit(sys.argv[1], sys.argv[2], sys.argv[3])
