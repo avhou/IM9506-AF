@@ -1,10 +1,10 @@
-<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36" version="26.2.8">
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36" version="26.2.9">
   <diagram name="Disinformation Detection Experiments" id="6zVEg0vWxW1A6ctEU3sv">
-    <mxGraphModel dx="1488" dy="836" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="1428" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="fjuuD0YkLTTTQPfJitDC-18" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;shadow=0;flowAnimation=0;curved=0;" edge="1" parent="1" source="2" target="fjuuD0YkLTTTQPfJitDC-17">
+        <mxCell id="fjuuD0YkLTTTQPfJitDC-18" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;shadow=0;flowAnimation=0;curved=0;" parent="1" source="2" target="fjuuD0YkLTTTQPfJitDC-17" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="2" value="Articles" style="shape=rectangle;whiteSpace=wrap;rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
@@ -24,7 +24,7 @@
         <mxCell id="4" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;" parent="1" source="2" target="3" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="5" value="Extract RDF Triples (LLaMA / Phi-4)" style="shape=rectangle;whiteSpace=wrap;rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
+        <mxCell id="5" value="Extract RDF Triples" style="shape=rectangle;whiteSpace=wrap;rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
           <mxGeometry x="300" y="277" width="220" height="60" as="geometry" />
         </mxCell>
         <mxCell id="6" value="Experiment 2: Triple Prompting" style="shape=rectangle;whiteSpace=wrap;rounded=1;fillColor=#f8cecc;strokeColor=#b85450;" parent="1" vertex="1">
@@ -36,7 +36,7 @@
         <mxCell id="8" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;" parent="1" source="5" target="6" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="9" value="Knowledge base Construction (LLaMA)" style="shape=rectangle;whiteSpace=wrap;rounded=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+        <mxCell id="9" value="Knowledge base Construction" style="shape=rectangle;whiteSpace=wrap;rounded=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
           <mxGeometry x="560" y="193" width="220" height="60" as="geometry" />
         </mxCell>
         <mxCell id="10" value="Extract Refined Triples&#xa;Aligned to Knowledge base" style="shape=rectangle;whiteSpace=wrap;rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
@@ -64,10 +64,10 @@
         <mxCell id="17" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;" parent="1" source="6" target="15" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="fjuuD0YkLTTTQPfJitDC-19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="fjuuD0YkLTTTQPfJitDC-17" target="9">
+        <mxCell id="fjuuD0YkLTTTQPfJitDC-19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="fjuuD0YkLTTTQPfJitDC-17" target="9" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="fjuuD0YkLTTTQPfJitDC-17" value="Extract RDF Triples (LLaMA / Phi-4)" style="shape=rectangle;whiteSpace=wrap;rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+        <mxCell id="fjuuD0YkLTTTQPfJitDC-17" value="Extract RDF Triples" style="shape=rectangle;whiteSpace=wrap;rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
           <mxGeometry x="560" y="110" width="220" height="60" as="geometry" />
         </mxCell>
       </root>
