@@ -5,6 +5,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 from typing import List, Dict, Optional
 import re
+import os
 
 
 class RedditEntry(BaseModel):
@@ -15,7 +16,7 @@ class RedditEntry(BaseModel):
 
     def to_str(self, level: int = 0) -> str:
         indent = ' ' * (level * 2)
-        result = f"{indent}{clean_text(self.text)}"
+        result = f"{indent}{clean_text(self.text)}{os.linesep}"
         for comment in self.comments:
             result += comment.to_str(level + 1)
         return result
@@ -109,6 +110,7 @@ def process_reddit(input_folder: str, input_db: str, output_db: str):
     data_per_subreddit: Dict[str, List[FlatEntry]] = {}
     pattern = r"^reddit-(?P<subreddit>[^-]+)-(?P<keyword>[^-]+)\.json$"
 
+    # de ids die we willen bekijken
     ids = set()
     id_to_url_map = {}
     subreddits = set()
@@ -129,6 +131,7 @@ def process_reddit(input_folder: str, input_db: str, output_db: str):
     print(f"found {len(ids)} unique ids and {len(subreddits)} unique subreddits")
 
 
+    seen = set()
     for reddit_file in Path(input_folder).rglob("reddit-*.json"):
         match = re.match(pattern, reddit_file.name)
         if match:
@@ -139,7 +142,8 @@ def process_reddit(input_folder: str, input_db: str, output_db: str):
                 with open(reddit_file, "r") as f:
                     data = json.load(f)
                     for id, value in data.items():
-                        if id in ids:
+                        if id in ids and id not in seen:
+                            seen.add(id)
                             # print(f"adding entry {id}")
                             print(f"adding url {id_to_url_map[id]} for id {id}")
                             value["url"] = id_to_url_map[id]
@@ -150,16 +154,31 @@ def process_reddit(input_folder: str, input_db: str, output_db: str):
         with sqlite3.connect(output_db) as conn_output:
             conn_output.execute(f"create table if not exists articles_reddit(source text, url text, timestamp text, metadata text, detected_language text, text text, translated_text text, keywords text, relevant text, disinformation text)")
             for subreddit, entries in data_per_subreddit.items():
-                print(f"processing subreddit {subreddit}")
                 for entry in entries:
+                    print(f"processing subreddit {subreddit}, entry {entry.url}")
                     reddit_entry = flat_entry_to_reddit_entry(entry)
                     # print(RedditEntry.model_dump_json(reddit_entry, indent=2))
                     print(f"====== nr of flat comments {0 if entry.comments is None else len(entry.comments)} nr of comments {reddit_entry.number_of_comments()} ======")
-                    print(reddit_entry.url)
-                    print(f"select source, url, timestamp, metadata, detected_language, text, translated_text, keywords, relevant, disinformation from articles where url = {reddit_entry.url} limit 1")
-                    input_row = conn_input.execute(f"select source, url, timestamp, metadata, detected_language, text, translated_text, keywords, relevant, disinformation from articles where url = {reddit_entry.url} limit 1").fetchone()[0]
+                    input_row = conn_input.execute(f"select source, url, timestamp, metadata, detected_language, text, translated_text, keywords, relevant, disinformation from articles where url = ?", (reddit_entry.url, )).fetchone()
                     input_source = input_row[0]
-                    print(f"input source {input_source}")
+                    input_url = input_row[1]
+                    input_timestamp = input_row[2]
+                    input_metadata = input_row[3]
+                    input_detected_language = input_row[4]
+                    input_text = input_row[5]
+                    input_translated_text = input_row[6]
+                    input_keywords = input_row[7]
+                    input_relevant = input_row[8]
+                    input_disinformation = input_row[9]
+                    thread_number = 0
+                    print(f"processing subreddit {subreddit}, entry {entry.url}, nr of threads {len(reddit_entry.comments)}")
+                    for thread in reddit_entry.comments:
+                        thread_text = str(thread)
+                        if "[removed]" not in thread_text and "[deleted]" not in thread_text:
+                            thread_number = thread_number + 1
+                            # print(f"must process thread {thread}")
+                            conn_output.execute(f"insert into articles_reddit(source, url, timestamp, metadata, detected_language, text, translated_text, keywords, relevant, disinformation) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (input_source, f"{input_url}-thread-{thread_number}", input_timestamp, input_metadata, input_detected_language, thread_text, thread_text, input_keywords, input_relevant, ""))
+                            conn_output.commit()
 
 
 
