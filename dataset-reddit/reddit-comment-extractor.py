@@ -6,6 +6,12 @@ from pydantic import BaseModel, Field
 from typing import List, Dict, Optional
 import re
 import os
+from googletrans import Translator
+from llama_index.core.node_parser import SentenceSplitter
+
+import wget
+import fasttext
+import asyncio
 
 
 class RedditEntry(BaseModel):
@@ -16,7 +22,11 @@ class RedditEntry(BaseModel):
 
     def to_str(self, level: int = 0) -> str:
         indent = ' ' * (level * 2)
-        result = f"{indent}{clean_text(self.text)}{os.linesep}"
+        cleaned_text = clean_text(self.text)
+        if "[removed]" not in cleaned_text and "[deleted]" not in cleaned_text:
+            result = f"{indent}{cleaned_text}{os.linesep}"
+        else:
+            result = ""
         for comment in self.comments:
             result += comment.to_str(level + 1)
         return result
@@ -150,6 +160,12 @@ def process_reddit(input_folder: str, input_db: str, output_db: str):
                             entry = FlatEntry(**value)
                             data_per_subreddit[subreddit].append(entry)
 
+    if not os.path.exists("lid.176.bin"):
+        print("downloading fasttext model")
+        wget.download("https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin", "lid.176.bin")
+
+    model = fasttext.load_model("lid.176.bin")
+    translator = Translator()
     with sqlite3.connect(input_db) as conn_input:
         with sqlite3.connect(output_db) as conn_output:
             conn_output.execute(f"create table if not exists articles_reddit(source text, url text, timestamp text, metadata text, detected_language text, text text, translated_text text, keywords text, relevant text, disinformation text)")
@@ -157,30 +173,85 @@ def process_reddit(input_folder: str, input_db: str, output_db: str):
                 for entry in entries:
                     print(f"processing subreddit {subreddit}, entry {entry.url}")
                     reddit_entry = flat_entry_to_reddit_entry(entry)
-                    # print(RedditEntry.model_dump_json(reddit_entry, indent=2))
                     print(f"====== nr of flat comments {0 if entry.comments is None else len(entry.comments)} nr of comments {reddit_entry.number_of_comments()} ======")
-                    input_row = conn_input.execute(f"select source, url, timestamp, metadata, detected_language, text, translated_text, keywords, relevant, disinformation from articles where url = ?", (reddit_entry.url, )).fetchone()
-                    input_source = input_row[0]
-                    input_url = input_row[1]
-                    input_timestamp = input_row[2]
-                    input_metadata = input_row[3]
-                    input_detected_language = input_row[4]
-                    input_text = input_row[5]
-                    input_translated_text = input_row[6]
-                    input_keywords = input_row[7]
-                    input_relevant = input_row[8]
-                    input_disinformation = input_row[9]
-                    thread_number = 0
-                    print(f"processing subreddit {subreddit}, entry {entry.url}, nr of threads {len(reddit_entry.comments)}")
-                    for thread in reddit_entry.comments:
-                        thread_text = str(thread)
-                        if "[removed]" not in thread_text and "[deleted]" not in thread_text:
-                            thread_number = thread_number + 1
-                            # print(f"must process thread {thread}")
-                            conn_output.execute(f"insert into articles_reddit(source, url, timestamp, metadata, detected_language, text, translated_text, keywords, relevant, disinformation) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (input_source, f"{input_url}-thread-{thread_number}", input_timestamp, input_metadata, input_detected_language, thread_text, thread_text, input_keywords, input_relevant, ""))
-                            conn_output.commit()
+                    process_reddit_entry(reddit_entry, conn_input, conn_output, model, translator)
 
 
+def detect_language(text, model):
+    prediction = model.predict(text, k=1)  # k=1 means top-1 prediction
+    lang_code = prediction[0][0].replace('__label__', '')  # Extract language code
+    confidence = prediction[1][0]  # Confidence score
+    return lang_code, confidence
+
+
+# Configurable limits
+MAX_WORDS = 500  # Chunk size in words
+OVERLAP = 0  # Overlapping words to maintain context
+BATCH_SIZE = 10  # Rows to process in one batch
+MAX_CONCURRENT_REQUESTS = 1  # Limit simultaneous translations
+
+# Initialize the LlamaIndex Sentence Splitter
+splitter = SentenceSplitter(chunk_size=MAX_WORDS, chunk_overlap=OVERLAP)
+
+async def translate_text(translator: Translator, text: str, lang: str):
+    """Translates text using LlamaIndex chunking for large inputs."""
+    try:
+        # Split text into chunks
+        chunks = splitter.split_text(text)
+
+        # Translate each chunk separately
+        translated_chunks = []
+        for chunk in chunks:
+            print(f"translating chunk: {chunk[:100]}")
+            translated = await translator.translate(chunk, src=lang, dest='en')
+            translated_chunks.append(translated.text)
+
+        return " ".join(translated_chunks)  # Rejoin translated parts
+    except Exception as e:
+        return f"ERROR: {e}"
+
+def run_async_task(coroutine):
+    """Runs an async task safely, avoiding 'event loop is closed' errors."""
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:  # No event loop exists
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    return loop.run_until_complete(coroutine)
+
+def process_reddit_entry(reddit_entry: RedditEntry, conn_input: sqlite3.Connection, conn_output: sqlite3.Connection, model, translator: Translator):
+    input_row = conn_input.execute(f"select source, url, timestamp, metadata, detected_language, text, translated_text, keywords, relevant, disinformation from articles where url = ?", (reddit_entry.url, )).fetchone()
+    input_source = input_row[0]
+    input_url = input_row[1]
+    input_timestamp = input_row[2]
+    input_metadata = input_row[3]
+    input_detected_language = input_row[4]
+    input_text = input_row[5]
+    input_translated_text = input_row[6]
+    input_keywords = input_row[7]
+    input_relevant = input_row[8]
+    input_disinformation = input_row[9]
+    thread_number = 0
+    print(f"processing entry {reddit_entry.url}, nr of threads {len(reddit_entry.comments)}")
+    for thread in reddit_entry.comments:
+        thread_text = str(thread)
+        lang_code, _ = detect_language(re.sub(r'\n', ' ', thread_text), model)
+        if (lang_code != input_detected_language):
+            print(f"detected language {lang_code} != {input_detected_language}")
+        if (lang_code != "en"):
+            print(f"will translate to english")
+            translated_text = run_async_task(translate_text(translator, thread_text, lang_code))
+        else:
+            translated_text = thread_text
+
+        if (len(re.sub(r'\s+', '', thread_text)) == 0):
+            print(f"skipping empty thread")
+            continue
+
+        thread_number = thread_number + 1
+        # print(f"must process thread {thread}")
+        conn_output.execute(f"insert into articles_reddit(source, url, timestamp, metadata, detected_language, text, translated_text, keywords, relevant, disinformation) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (input_source, f"{input_url}-thread-{thread_number}", input_timestamp, input_metadata, lang_code, thread_text, translated_text, input_keywords, input_relevant, ""))
+        conn_output.commit()
 
 
 if __name__ == "__main__":
