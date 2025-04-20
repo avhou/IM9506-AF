@@ -127,7 +127,7 @@ def process_reddit(input_folder: str, input_db: str, output_db: str):
 
     print(f"getting unique ids and subreddits")
     with sqlite3.connect(input_db) as conn:
-        for row in conn.execute(f"select distinct json_extract(metadata, '$.id'), json_extract(metadata, '$.subreddit'), url from articles where source = 'reddit' and disinformation = 'y'"):
+        for row in conn.execute(f"select distinct json_extract(metadata, '$.id'), json_extract(metadata, '$.subreddit'), url from articles where source = 'reddit'"):
             id = row[0]
             ids.add(id)
             subreddit = row[1]
@@ -233,8 +233,7 @@ def process_reddit_entry(reddit_entry: RedditEntry, conn_input: sqlite3.Connecti
     input_disinformation = input_row[9]
     thread_number = 0
     print(f"processing entry {reddit_entry.url}, nr of threads {len(reddit_entry.comments)}")
-    for thread in reddit_entry.comments:
-        thread_text = str(thread)
+    for thread_text in [reddit_entry.text] + [str(c) for c in reddit_entry.comments]:
         lang_code, _ = detect_language(re.sub(r'\n', ' ', thread_text), model)
         if (lang_code != input_detected_language):
             print(f"detected language {lang_code} != {input_detected_language}")
@@ -250,7 +249,7 @@ def process_reddit_entry(reddit_entry: RedditEntry, conn_input: sqlite3.Connecti
 
         thread_number = thread_number + 1
         # print(f"must process thread {thread}")
-        conn_output.execute(f"insert into articles_reddit(source, url, timestamp, metadata, detected_language, text, translated_text, keywords, relevant, disinformation) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (input_source, f"{input_url}-thread-{thread_number}", input_timestamp, input_metadata, lang_code, thread_text, translated_text, input_keywords, input_relevant, ""))
+        conn_output.execute(f"insert into articles_reddit(source, url, timestamp, metadata, detected_language, text, translated_text, keywords, relevant, disinformation) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (input_source, f"{input_url}-thread-{thread_number}", input_timestamp, input_metadata, lang_code, thread_text, translated_text, input_keywords, input_relevant, input_disinformation if input_disinformation == "n" else ""))
         conn_output.commit()
 
 
