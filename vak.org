@@ -385,6 +385,17 @@ to discuss :
   - exact setup of experiments RQ2
     use both full KG and disinformation KG.  Stefano zegt eerder volledige KG te gebruiken. 80% training 20% test, ontology with the 80%.  pytorch geometric, stellargraph (keras) rdf2vec.
   - triples seem to be very nuanced.  not trivial to see cypher queries to detect disinformation discourses.  llama almost exclusively one hop connections.   phi4 a bit more "few" hop connections.  ie no reasoning chains present in the extracted triples / knowledge graphs.
+
+** volgende meeting
+- tonen figuur met threads dataset creation
+- RQ1 te herdoen met reddit threads?  denk dat dit nodig is, anders appelen en peren vergelijken.
+- RQ2 embedding alignment failure.  uit te leggen, op te nemen in tekst?  figuurtjes?
+- RQ2 : wat willen we injecteren als de bijkomende context?  de triples? of de texten van de meest relevant articles (of chunks)?  tonen van figuur!
+- naamgeving : moeten we spreken over chunks of over paragraphs?  paragraphs is technisch niet wat er gebeurt.
+- text : mix past tense / future tense in e.g. chapter 4 methodology.  how to solve?
+- should we do hyperparameter experiments?  chunking size?  top-k?  overlap?  different embedding models?  indien ja, terug vermelden in 4.3 (is nu verwijderd)
+
+
 * links
 
 [[https://emschwartz.me/understanding-the-bm25-full-text-search-algorithm/][BM25 search algorithm]]
@@ -618,3 +629,24 @@ I believe using the threaded data, at least for the further RQs would be advanta
 Thank you for letting me know what you think would be appropriate.
 
 wkr,
+
+
+Dear Clara and Stefano,
+
+here are some points I would like to discuss tomorrow.  Please see the report included, we can use this for the tables and figures.
+
+
+- ivm extra papers voor GRAG chapter in related research, is bestaande niet genoeg?  indien niet, specific zoeken op disinformation detection?  of dis detection met (G)RAG?
+in 2.4 toevoegen.
+- should we redo / replace RQ1 with reddit threaded dataset?  comparing apples to oranges.
+-> ja, rq1 resultaten ook doen met threaded data
+- RQ2 embedding alignment failure.  to include in AF text?
+-> ja, in chapter methodology, onder een subsection additional experimentation.
+- RQ2, choice of context (done with all 3), see figure 4.2 and table 7.2
+-> OK
+- should we talk about chunks or paragraphs?   technically, these are not paragraphs (ie not necessarily coherent)
+-> chunks is OK
+- text : mix past / present / future tense in e.g. chapter 4 methodology.  how to solve?
+-> only past / present tense
+- should we do hyperparameter experiments?  chunking size?  top-k?  overlap?  different embedding models?
+-> niet nu, eventueel als er tijd over is
